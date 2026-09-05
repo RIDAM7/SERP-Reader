@@ -114,4 +114,11 @@ export function collectSerp(doc: Document, pageUrl: string, opts: CollectOptions
 }
 
 export { isGoogleSerp } from './metadata';
+
+/*
+ * Exported for the tests. domainFromCite is the one helper worth asserting on
+ * directly: it is pure string work standing in for a URL parser that Chrome and
+ * Node disagree about, and that disagreement is invisible through collectSerp.
+ */
+export { domainFromCite } from './utils';
 export { expandPAA } from './paa';

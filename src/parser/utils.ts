@@ -145,28 +145,51 @@ const HOSTNAME = /^(?=.{4,253}$)([a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}$
 
 export function domainFromCite(citeText: string): string {
   if (!citeText) return '';
-  const head = citeText.split(/[›»]/)[0].trim();
 
-  let candidate = '';
-  try {
-    candidate = new URL(/^https?:\/\//i.test(head) ? head : `https://${head}`).hostname;
-  } catch {
-    candidate = head.match(/[a-z0-9-]+(\.[a-z0-9-]+)+/i)?.[0] ?? '';
-  }
-  candidate = candidate.replace(/^www\./, '').toLowerCase();
+  /*
+   * Cut the host out with string work. `new URL()` must never see this.
+   *
+   * A cite is not a URL. Google writes `https://host › path › path`, and also
+   * `https://host · Sep 26, 2025`, and on a video `26.9K+ views · 4 months ago`.
+   * Handing any of those to the URL parser asks it to guess, and Chrome and
+   * Node guess DIFFERENTLY. Run in both:
+   *
+   *   new URL('https://university.webflow.com · Sep 26, 2025').hostname
+   *     Chrome -> university.webflow.xn--com%20%20sep%2026,%202025-bgb
+   *     Node   -> university.webflow.com
+   *
+   * That divergence cost a real result. The extension runs in Chrome, got the
+   * punycode, failed the hostname guard below and dropped "Introduction to
+   * Answer Engine Optimization" from position 1 — on two separate captures of
+   * "answer engine optimization", a month apart. Re-parsing the same snapshot
+   * under Node kept it, which is the only reason the disagreement surfaced.
+   *
+   * No test could have caught it: the suite runs on linkedom under Node, where
+   * the bug does not reproduce. A green suite says the logic is right, not that
+   * the runtime agrees with it.
+   *
+   * The host is just the first token — everything before whitespace or a
+   * separator, once the scheme is gone. No parser, so no divergence.
+   */
+  const candidate = citeText
+    .replace(/^\s*https?:\/\//i, '')
+    .trim()
+    .split(/[\s›»·|,]+/)[0]
+    .replace(/[/:].*$/, '')
+    .replace(/^www\./i, '')
+    .toLowerCase();
 
   /*
    * Validate the shape before believing it.
    *
-   * Not every `cite` holds a URL. A video result's cite reads
-   * "26.9K+ views · 4 months ago", and feeding that to `new URL()` produced the
-   * hostname `26.xn--9k+%20views%20%204%20months%20ago-3sb` — punycode nonsense
-   * that sailed through as a domain and put a video carousel entry at organic
-   * position 1 in the first real capture.
+   * Not every cite holds a URL at all. A video result's reads "26.9K+ views · 4
+   * months ago", whose first token is `26.9k+` — not hostname-shaped, so it is
+   * rejected here. Before this guard existed that string became a punycode
+   * domain and put a video carousel entry at organic position 1 in the first
+   * real capture.
    *
-   * Rejecting anything that is not hostname-shaped removes that whole class of
-   * result, because a block with no parseable destination is not one we can
-   * honestly report a domain for.
+   * A block with no parseable destination is not one we can honestly report a
+   * domain for.
    */
   return HOSTNAME.test(candidate) ? candidate : '';
 }

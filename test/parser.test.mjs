@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseHTML } from 'linkedom';
 
-import { collectSerp, isGoogleSerp } from './.parser.mjs';
+import { collectSerp, isGoogleSerp, domainFromCite } from './.parser.mjs';
 import { aiCitationsCsv, organicCsv, paaCsv, serpsJson } from './.export.mjs';
 import { manyResults, serpHtml } from './fixtures.mjs';
 
@@ -396,4 +396,28 @@ test('the full JSON export keeps the raw snapshot when asked', () => {
 
   const dropped = JSON.parse(serpsJson([d], false));
   assert.equal(dropped.serps[0].rawHtml, undefined, 'opting out should still drop it');
+});
+
+test('a cite is parsed as text, never handed to new URL()', () => {
+  // Chrome and Node's URL parsers disagree on a cite with a trailing date:
+  //   new URL('https://university.webflow.com · Sep 26, 2025').hostname
+  //     Chrome -> university.webflow.xn--com%20%20sep%2026,%202025-bgb
+  //     Node   -> university.webflow.com
+  // The extension runs in Chrome, so it dropped a real result from position 1
+  // on two captures. This test cannot reproduce that -- it runs under Node --
+  // so it asserts the string handling instead, which is the thing that removed
+  // the dependency on either parser.
+  const cases = [
+    ['https://university.webflow.com · Sep 26, 2025', 'university.webflow.com'],
+    ['https://www.forbes.com › Innovation › AI', 'forbes.com'],
+    ['https://developers.google.com › search › docs', 'developers.google.com'],
+    ['sana-commerce.com', 'sana-commerce.com'],
+    ['https://blog.hubspot.com/marketing/seo', 'blog.hubspot.com'],
+    ['26.9K+ views · 4 months ago', ''],
+    ['60+ comments · 12 months ago', ''],
+    ['', ''],
+  ];
+  for (const [cite, expected] of cases) {
+    assert.equal(domainFromCite(cite), expected, `cite ${JSON.stringify(cite)}`);
+  }
 });
