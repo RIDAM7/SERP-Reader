@@ -1,0 +1,4 @@
+keyword,timestamp,country,order,question,answer,source_url,source_domain,expanded,serp_id
+paa-serp,2026-09-04T18:24:55.240Z,us,1,What is generative engine optimization?,Making a site legible to AI answer engines.,https://one.example.com/,one.example.com,true,65b5cb06-d334-4fee-a2ab-778fb64c0b5f
+paa-serp,2026-09-04T18:24:55.240Z,us,2,How is GEO different from SEO?,"SEO targets rankings, GEO targets citations.",https://two.example.com/,two.example.com,true,65b5cb06-d334-4fee-a2ab-778fb64c0b5f
+paa-serp,2026-09-04T18:24:55.240Z,us,3,Does llms.txt help?,,,,false,65b5cb06-d334-4fee-a2ab-778fb64c0b5f

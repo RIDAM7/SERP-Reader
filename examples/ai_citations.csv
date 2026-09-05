@@ -1,0 +1,4 @@
+keyword,timestamp,country,citation_order,title,url,domain,serp_id
+ai-overview,2026-09-04T18:24:55.249Z,us,1,cited-one.example.com,https://cited-one.example.com/a,cited-one.example.com,30ac2068-14f5-4ae0-85f4-db7455a6afb0
+ai-overview,2026-09-04T18:24:55.249Z,us,2,cited-two.example.com,https://cited-two.example.com/b,cited-two.example.com,30ac2068-14f5-4ae0-85f4-db7455a6afb0
+ai-overview,2026-09-04T18:24:55.249Z,us,3,cited-three.example.com,https://cited-three.example.com/c,cited-three.example.com,30ac2068-14f5-4ae0-85f4-db7455a6afb0

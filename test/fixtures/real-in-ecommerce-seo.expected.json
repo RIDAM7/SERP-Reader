@@ -1,0 +1,35 @@
+{
+  "capturedAt": "2026-09-04T19:12:27.083Z",
+  "url": "https://www.google.com/search?q=ecommerce%20seo&gl=in&hl=en&pws=0&num=20",
+  "query": "ecommerce seo",
+  "country": "in",
+  "parserVersion": "1.0.0",
+  "organicCount": 8,
+  "firstDomains": [
+    "developers.google.com",
+    "sana-commerce.com",
+    "semrush.com",
+    "coalitiontechnologies.com",
+    "coursera.org"
+  ],
+  "paaCount": 4,
+  "hasAiOverview": true,
+  "aiCitationDomains": [
+    "geeksforgeeks.org",
+    "coursera.org",
+    "wisepim.com",
+    "developers.google.com",
+    "semrush.com",
+    "bigcommerce.com",
+    "sana-commerce.com",
+    "networksolutions.com"
+  ],
+  "features": [
+    "ai_overview",
+    "people_also_ask",
+    "video_carousel",
+    "related_searches"
+  ],
+  "adCount": 0,
+  "adDomains": []
+}

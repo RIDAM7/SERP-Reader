@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "SERP Reader",
+  "version": "1.0.0",
+  "description": "Reads and stores the Google results page you already have open. No searching, no automation — you open the URL, you press Collect.",
+  "permissions": ["unlimitedStorage"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "SERP Reader",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "matches": [
+        "*://www.google.com/search*",
+        "*://www.google.co.in/search*",
+        "*://www.google.co.uk/search*",
+        "*://www.google.ca/search*",
+        "*://www.google.com.au/search*",
+        "*://www.google.ie/search*",
+        "*://www.google.de/search*",
+        "*://www.google.fr/search*",
+        "*://www.google.nl/search*",
+        "*://www.google.es/search*",
+        "*://www.google.it/search*",
+        "*://www.google.se/search*",
+        "*://www.google.dk/search*",
+        "*://www.google.no/search*",
+        "*://www.google.fi/search*",
+        "*://www.google.pt/search*",
+        "*://www.google.pl/search*",
+        "*://www.google.ch/search*",
+        "*://www.google.at/search*",
+        "*://www.google.be/search*",
+        "*://www.google.com.br/search*",
+        "*://www.google.com.mx/search*",
+        "*://www.google.com.sg/search*",
+        "*://www.google.co.jp/search*",
+        "*://www.google.co.za/search*",
+        "*://www.google.ae/search*",
+        "*://www.google.com.ph/search*",
+        "*://google.com/search*"
+      ]
+    }
+  ]
+}

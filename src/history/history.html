@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SERP Reader — History</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 24px 28px; max-width: 1180px;
+        font: 13.5px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        color: #202124; background: #fff;
+      }
+      h1 { font-size: 19px; margin: 0 0 3px; }
+      .sub { color: #5f6368; font-size: 12.5px; margin-bottom: 18px; }
+      .bar { display: flex; gap: 9px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+      input[type="search"] {
+        flex: 1 1 260px; padding: 8px 11px; font: inherit;
+        border: 1px solid #dadce0; border-radius: 6px;
+      }
+      button {
+        padding: 8px 13px; font: inherit; font-weight: 600; cursor: pointer;
+        border: 1px solid #dadce0; border-radius: 6px; background: #fff; color: #202124;
+      }
+      button:hover { background: #f8f9fa; }
+      button.danger { color: #c5221f; border-color: #f3c2c1; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #ecedef; vertical-align: top; }
+      th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: #5f6368; }
+      td.num { text-align: right; font-variant-numeric: tabular-nums; }
+      tr.row:hover { background: #f8f9fa; }
+      .kw { font-weight: 600; cursor: pointer; }
+      .kw:hover { text-decoration: underline; }
+      .chips { display: flex; gap: 4px; flex-wrap: wrap; }
+      .chip {
+        font-size: 10.5px; padding: 1px 6px; border-radius: 20px;
+        background: #f1f3f4; color: #3c4043; white-space: nowrap;
+      }
+      .chip.aio { background: #e8f0fe; color: #1967d2; }
+      .empty { padding: 40px 0; text-align: center; color: #5f6368; }
+      dialog { border: 0; border-radius: 10px; padding: 0; max-width: 90vw; width: 900px; box-shadow: 0 8px 40px rgba(0,0,0,.25); }
+      dialog header { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid #ecedef; }
+      dialog h2 { margin: 0; font-size: 15px; }
+      pre { margin: 0; padding: 16px; max-height: 65vh; overflow: auto; font-size: 11.5px; background: #f8f9fa; white-space: pre-wrap; word-break: break-word; }
+      .actions { display: flex; gap: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>SERP History</h1>
+    <div class="sub" id="sub">Loading…</div>
+
+    <div class="bar">
+      <input type="search" id="filter" placeholder="Filter by keyword or domain…" />
+      <button id="export">Export all</button>
+      <button id="clear" class="danger">Delete all</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Keyword</th>
+          <th>Collected</th>
+          <th class="num">Organic</th>
+          <th class="num">PAA</th>
+          <th>Features</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden>Nothing collected yet. Open a Google results page and press Collect.</div>
+
+    <dialog id="viewer">
+      <header>
+        <h2 id="viewer-title">SERP</h2>
+        <div class="actions">
+          <button id="viewer-json">Download JSON</button>
+          <button id="viewer-close">Close</button>
+        </div>
+      </header>
+      <pre id="viewer-body"></pre>
+    </dialog>
+
+    <script src="history.js" type="module"></script>
+  </body>
+</html>

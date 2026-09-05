@@ -1,0 +1,38 @@
+{
+  "capturedAt": "2026-09-04T19:19:36.410Z",
+  "url": "https://www.google.com/search?q=generative%20engine%20optimization&gl=in&hl=en&pws=0&num=20",
+  "query": "generative engine optimization",
+  "country": "in",
+  "parserVersion": "1.0.0",
+  "organicCount": 7,
+  "firstDomains": [
+    "en.wikipedia.org",
+    "developers.google.com",
+    "semrush.com",
+    "coursera.org",
+    "moz.com"
+  ],
+  "paaCount": 4,
+  "hasAiOverview": true,
+  "aiCitationDomains": [
+    "youtube.com",
+    "coursera.org"
+  ],
+  "features": [
+    "ai_overview",
+    "people_also_ask",
+    "video_carousel",
+    "reddit",
+    "related_searches",
+    "ads"
+  ],
+  "adCount": 6,
+  "adDomains": [
+    "tryprofound.com",
+    "business.adobe.com",
+    "peec.ai",
+    "onlinemarketinggurus.com.au",
+    "tryprofound.com",
+    "business.adobe.com"
+  ]
+}

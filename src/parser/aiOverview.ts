@@ -1,0 +1,133 @@
+/**
+ * AI Overview — the reason this tool exists for GEO work.
+ *
+ * The citations matter more than the prose. "Who does Google quote when
+ * answering this" is the closest thing to a measurable answer to the GEO
+ * question, and it is not available from any keyword tool.
+ *
+ * Reads only what is already rendered. An AI Overview that has not finished
+ * streaming, or that sits behind a "Show more", yields whatever is on screen —
+ * `present: true` with partial text, never a guess at the rest.
+ */
+import type { AIOverview, CitedSource } from '../types/serp';
+import { AI_OVERVIEW } from './selectors';
+import { pickAll, resolveHref, text, textFrom } from './utils';
+
+/** A bare domain used as a citation chip: `forbes.com`, `seobility.net`. */
+const BARE_DOMAIN = /^(?=.{4,80}$)([a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}$/i;
+
+/**
+ * `robots.txt` is not a website.
+ *
+ * BARE_DOMAIN matches any `word.word`, so filenames written in the AI
+ * Overview's prose were recorded as cited domains. On "shopify seo
+ * optimization" two of the eleven citations came back as `robots.txt` and
+ * `sitemap.xml`.
+ *
+ * Not a rare edge either: an SEO research tool reads answers about robots.txt,
+ * sitemap.xml, llms.txt and ads.txt constantly, so the contaminant tracks the
+ * subject matter. Extensions that are also real TLDs (.md, .zip, .mov) are
+ * deliberately absent — a Moldovan domain is likelier here than a README.
+ */
+const FILENAME = /[.](txt|xml|json|html?|css|js|php|aspx?|jsp|csv|tsv|pdf|png|jpe?g|gif|svg|webp|ico)$/i;
+
+/**
+ * The container holding the most text, not the first one that matches.
+ *
+ * Several of Google's AI Overview wrappers match the same selectors, and the
+ * first in DOM order is often the `AI Overview` label alone — eleven characters
+ * and no citations. Measured on a real capture: `div.Fzsovc` matched first with
+ * 11 characters while `div.YzCcne` held the actual answer and 31 links.
+ *
+ * Picking by content survives Google renaming or reordering those wrappers,
+ * which selector ordering does not.
+ */
+function bestContainer(doc: Document): Element | null {
+  const candidates = pickAll(doc, AI_OVERVIEW.containers);
+  let best: Element | null = null;
+  let bestLen = 0;
+  for (const c of candidates) {
+    /*
+     * Raw textContent, deliberately, even though it counts inlined script.
+     *
+     * Measuring visible text instead looks obviously more correct and is not:
+     * it changed the winner on two real captures and cost most of their
+     * citations — "geo vs seo" went from 8 domains to 1, "answer engine
+     * optimization" from 7 to 1. The citation-bearing container is the one
+     * carrying the most markup, script included; a smaller, cleaner wrapper
+     * nested inside it wins on visible text alone and holds almost no chips.
+     */
+    const len = (c.textContent ?? '').length;
+    if (len > bestLen) {
+      best = c;
+      bestLen = len;
+    }
+  }
+  // A wrapper with almost nothing in it is a label, not an overview.
+  return bestLen >= 60 ? best : (candidates[0] ?? null);
+}
+
+/**
+ * Citations, found via the visible domain chips rather than the anchors.
+ *
+ * The anchors are useless on their own: their text is empty, they carry no
+ * `cite`, and their href is a `/goto` redirect. What is readable is the chip
+ * showing `forbes.com`, plus the anchor's `aria-label`
+ * ("Forbes (+1) – Answer Engine Optimization — What Brands...") for a title.
+ *
+ * So the domain leads and the link follows, which is the right way round for
+ * this data anyway: GEO analysis counts domains.
+ */
+function citations(container: Element, pageUrl: string): CitedSource[] {
+  const out: CitedSource[] = [];
+  const seen = new Set<string>();
+
+  for (const el of Array.from(container.querySelectorAll('*'))) {
+    if (el.children.length > 0) continue;
+    const label = (el.textContent ?? '').trim();
+    if (!BARE_DOMAIN.test(label) || FILENAME.test(label)) continue;
+
+    const domain = label.toLowerCase().replace(/^www\./, '');
+    if (seen.has(domain)) continue;
+    seen.add(domain);
+
+    const anchor = el.closest('a[href]') ?? el.parentElement?.querySelector('a[href]') ?? null;
+    const resolved = anchor ? resolveHref(anchor.getAttribute('href'), pageUrl) : null;
+    const title = anchor?.getAttribute('aria-label')?.trim() || undefined;
+
+    out.push({
+      title,
+      url: resolved?.url ?? '',
+      domain,
+      order: out.length + 1,
+    });
+  }
+  return out;
+}
+
+export function parseAIOverview(doc: Document, pageUrl: string): AIOverview {
+  const container = bestContainer(doc);
+  if (!container) return { present: false, sources: [] };
+
+  const heading = textFrom(container, AI_OVERVIEW.heading) || undefined;
+  const body = text(container);
+
+  const bullets = pickAll(container, AI_OVERVIEW.bullets)
+    .map((li) => text(li))
+    .filter((t) => t.length > 2)
+    .slice(0, 40);
+
+  const headings = pickAll(container, AI_OVERVIEW.heading)
+    .map((h) => text(h))
+    .filter(Boolean)
+    .slice(0, 20);
+
+  return {
+    present: true,
+    heading,
+    text: body || undefined,
+    headings: headings.length ? headings : undefined,
+    bullets: bullets.length ? bullets : undefined,
+    sources: citations(container, pageUrl),
+  };
+}

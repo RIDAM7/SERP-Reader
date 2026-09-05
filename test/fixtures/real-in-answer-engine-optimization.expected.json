@@ -1,0 +1,35 @@
+{
+  "capturedAt": "2026-09-04T19:04:20.192Z",
+  "url": "https://www.google.com/search?q=answer%20engine%20optimization&gl=in&hl=en&pws=0&num=20&sei=MBabapLEKN-UseMP2LCQSA",
+  "query": "answer engine optimization",
+  "country": "in",
+  "parserVersion": "1.0.0",
+  "organicCount": 8,
+  "firstDomains": [
+    "forbes.com",
+    "hubspot.com",
+    "coursera.org",
+    "pwc.com",
+    "cxl.com"
+  ],
+  "paaCount": 4,
+  "hasAiOverview": true,
+  "aiCitationDomains": [
+    "seo.com",
+    "youtube.com",
+    "forbes.com",
+    "pwc.com",
+    "coursera.org",
+    "parachutedesign.ca",
+    "hubspot.com",
+    "seobility.net"
+  ],
+  "features": [
+    "ai_overview",
+    "people_also_ask",
+    "video_carousel",
+    "related_searches"
+  ],
+  "adCount": 0,
+  "adDomains": []
+}

@@ -1,0 +1,164 @@
+{
+  "exportedAt": "2026-09-04T18:24:55.260Z",
+  "count": 1,
+  "serps": [
+    {
+      "id": "30ac2068-14f5-4ae0-85f4-db7455a6afb0",
+      "metadata": {
+        "query": "ai-overview",
+        "url": "https://www.google.com/search?q=ai-overview&gl=us&hl=en&pws=0&num=20",
+        "googleDomain": "www.google.com",
+        "language": "en",
+        "country": "us",
+        "requestedResults": 20,
+        "personalisationDisabled": true,
+        "device": "desktop",
+        "timestamp": "2026-09-04T18:24:55.249Z",
+        "organicResultCount": 8,
+        "adCount": 0,
+        "paaCount": 0,
+        "features": [
+          "ai_overview"
+        ]
+      },
+      "organicResults": [
+        {
+          "position": 1,
+          "type": "organic",
+          "title": "result 1",
+          "url": "https://site1.example.com/page",
+          "domain": "site1.example.com",
+          "displayedUrl": "site1.example.com › page",
+          "snippet": "Snippet for result 1.",
+          "isSponsored": false
+        },
+        {
+          "position": 2,
+          "type": "organic",
+          "title": "result 2",
+          "url": "https://site2.example.com/page",
+          "domain": "site2.example.com",
+          "displayedUrl": "site2.example.com › page",
+          "snippet": "Snippet for result 2.",
+          "isSponsored": false
+        },
+        {
+          "position": 3,
+          "type": "organic",
+          "title": "result 3",
+          "url": "https://site3.example.com/page",
+          "domain": "site3.example.com",
+          "displayedUrl": "site3.example.com › page",
+          "snippet": "Snippet for result 3.",
+          "isSponsored": false
+        },
+        {
+          "position": 4,
+          "type": "organic",
+          "title": "result 4",
+          "url": "https://site4.example.com/page",
+          "domain": "site4.example.com",
+          "displayedUrl": "site4.example.com › page",
+          "snippet": "Snippet for result 4.",
+          "isSponsored": false
+        },
+        {
+          "position": 5,
+          "type": "organic",
+          "title": "result 5",
+          "url": "https://site5.example.com/page",
+          "domain": "site5.example.com",
+          "displayedUrl": "site5.example.com › page",
+          "snippet": "Snippet for result 5.",
+          "isSponsored": false
+        },
+        {
+          "position": 6,
+          "type": "organic",
+          "title": "result 6",
+          "url": "https://site6.example.com/page",
+          "domain": "site6.example.com",
+          "displayedUrl": "site6.example.com › page",
+          "snippet": "Snippet for result 6.",
+          "isSponsored": false
+        },
+        {
+          "position": 7,
+          "type": "organic",
+          "title": "result 7",
+          "url": "https://site7.example.com/page",
+          "domain": "site7.example.com",
+          "displayedUrl": "site7.example.com › page",
+          "snippet": "Snippet for result 7.",
+          "isSponsored": false
+        },
+        {
+          "position": 8,
+          "type": "organic",
+          "title": "result 8",
+          "url": "https://site8.example.com/page",
+          "domain": "site8.example.com",
+          "displayedUrl": "site8.example.com › page",
+          "snippet": "Snippet for result 8.",
+          "isSponsored": false
+        }
+      ],
+      "ads": [],
+      "paa": [],
+      "aiOverview": {
+        "present": true,
+        "heading": "AI Overview",
+        "text": "AI Overview Generative engine optimization is the practice of making a site legible to AI answer engines. Structured data helpsCitations matter more than rankings cited-one.example.comcited-two.example.comcited-three.example.com",
+        "headings": [
+          "AI Overview"
+        ],
+        "bullets": [
+          "Structured data helps",
+          "Citations matter more than rankings"
+        ],
+        "sources": [
+          {
+            "title": "cited-one.example.com",
+            "url": "https://cited-one.example.com/a",
+            "domain": "cited-one.example.com",
+            "order": 1
+          },
+          {
+            "title": "cited-two.example.com",
+            "url": "https://cited-two.example.com/b",
+            "domain": "cited-two.example.com",
+            "order": 2
+          },
+          {
+            "title": "cited-three.example.com",
+            "url": "https://cited-three.example.com/c",
+            "domain": "cited-three.example.com",
+            "order": 3
+          }
+        ]
+      },
+      "serpFeatures": [
+        "ai_overview"
+      ],
+      "relatedSearches": [],
+      "peopleAlsoSearchFor": [],
+      "diagnostics": {
+        "containersDetected": 16,
+        "validOrganic": 8,
+        "rejected": [
+          {
+            "reason": "wrapper containing other results",
+            "count": 8
+          }
+        ],
+        "paaDetected": 0,
+        "aiOverview": "detected",
+        "localPack": "not detected",
+        "parserVersion": "1.0.0",
+        "warnings": [],
+        "durationMs": 8
+      },
+      "collectedAt": "2026-09-04T18:24:55.249Z"
+    }
+  ]
+}
