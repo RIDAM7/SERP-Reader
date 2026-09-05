@@ -117,12 +117,41 @@ function citations(container: Element, pageUrl: string): CitedSource[] {
   return out;
 }
 
+/**
+ * Google ships this hidden on essentially every SERP, overview or not.
+ *
+ * Measured: 73 of 75 US captures contain it, including every one that plainly
+ * DID render an overview. It is a placeholder element, not a statement about
+ * this search — which makes it useless as a signal and actively misleading if
+ * you count it. An earlier read of this corpus reported "73 of 75 searches
+ * could not generate an overview", which was this string and nothing else.
+ */
+const AIO_PLACEHOLDER =
+  /An AI Overview is not available for this search|Can't generate an AI overview right now|Try again later/gi;
+
 export function parseAIOverview(doc: Document, pageUrl: string): AIOverview {
   const container = bestContainer(doc);
   if (!container) return { present: false, sources: [] };
 
   const heading = textFrom(container, AI_OVERVIEW.heading) || undefined;
   const body = text(container);
+
+  /*
+   * `present` must mean an overview rendered, not that a container existed.
+   *
+   * bestContainer matches on selectors, and Google leaves the wrapper in the
+   * DOM even when nothing is shown. On "shopify seo help" that produced
+   * present: true against an entirely empty box — and the same capture's
+   * serpFeatures correctly omitted ai_overview, because detectFeatures applies
+   * a content check that this function did not. Two fields on one record
+   * disagreeing about the same fact is worse than either answer.
+   *
+   * Content means a citation, or real text once the placeholder above is
+   * removed. Both are absent from an empty wrapper.
+   */
+  const sources = citations(container, pageUrl);
+  const substantive = body.replace(AIO_PLACEHOLDER, '').trim();
+  if (!sources.length && substantive.length < 40) return { present: false, sources: [] };
 
   const bullets = pickAll(container, AI_OVERVIEW.bullets)
     .map((li) => text(li))
@@ -140,6 +169,6 @@ export function parseAIOverview(doc: Document, pageUrl: string): AIOverview {
     text: body || undefined,
     headings: headings.length ? headings : undefined,
     bullets: bullets.length ? bullets : undefined,
-    sources: citations(container, pageUrl),
+    sources,
   };
 }

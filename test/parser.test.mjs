@@ -422,3 +422,32 @@ test('a cite is parsed as text, never handed to new URL()', () => {
     assert.equal(domainFromCite(cite), expected, `cite ${JSON.stringify(cite)}`);
   }
 });
+
+test('an empty AI Overview container is not a present overview', () => {
+  // bestContainer matches on selectors and Google leaves the wrapper in the DOM
+  // even when nothing renders. On a real "shopify seo help" capture that gave
+  // present:true against an empty box, while the same record's serpFeatures
+  // correctly omitted ai_overview -- two fields disagreeing about one fact.
+  const html = serpHtml({ organic: manyResults(3) }).replace(
+    '<div id="center_col">',
+    '<div id="center_col"><div data-subtree="aio"></div>',
+  );
+  const d = collect(html);
+  assert.equal(d.aiOverview, undefined, 'an empty container was reported as an overview');
+  assert.ok(!d.serpFeatures.includes('ai_overview'));
+});
+
+test("Google's hidden placeholder is not mistaken for an overview", () => {
+  // This string ships hidden on essentially every SERP -- 73 of 75 US captures
+  // carried it, including every one that plainly DID render an overview. Read
+  // as a signal it produced the false finding "73 of 75 searches could not
+  // generate an overview".
+  const html = serpHtml({ organic: manyResults(3) }).replace(
+    '<div id="center_col">',
+    '<div id="center_col"><div data-subtree="aio">' +
+      "An AI Overview is not available for this searchCan't generate an AI overview right now. Try again later." +
+      '</div>',
+  );
+  const d = collect(html);
+  assert.equal(d.aiOverview, undefined, 'the placeholder alone was counted as an overview');
+});
