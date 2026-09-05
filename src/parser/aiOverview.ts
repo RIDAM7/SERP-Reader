@@ -26,10 +26,22 @@ const BARE_DOMAIN = /^(?=.{4,80}$)([a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24
  *
  * Not a rare edge either: an SEO research tool reads answers about robots.txt,
  * sitemap.xml, llms.txt and ads.txt constantly, so the contaminant tracks the
- * subject matter. Extensions that are also real TLDs (.md, .zip, .mov) are
- * deliberately absent — a Moldovan domain is likelier here than a README.
+ * subject matter. `robots.txt.liquid` arrived later, out of a Shopify answer —
+ * the list grows with the corpus.
+ *
+ * This is a blocklist, and blocklists lose. The principled fix is to check the
+ * last label against the real TLD list, and it was NOT taken because this
+ * corpus is full of unusual ones a partial list would wrongly reject:
+ * `cumberland.college`, `hallam.agency`, `mrs.digital`, `omnius.so`,
+ * `shadow.inc`, `evertune.ai`, `technotize.io`, `radarkit.ai`. Dropping a real
+ * citation is worse than admitting the occasional filename, so the trade is
+ * deliberate rather than lazy.
+ *
+ * Extensions that are also real TLDs (.md, .zip, .mov, .sh, .py) stay out — a
+ * Moldovan domain is likelier here than a README.
  */
-const FILENAME = /[.](txt|xml|json|html?|css|js|php|aspx?|jsp|csv|tsv|pdf|png|jpe?g|gif|svg|webp|ico)$/i;
+const FILENAME =
+  /[.](txt|xml|json|html?|css|js|php|aspx?|jsp|csv|tsv|pdf|png|jpe?g|gif|svg|webp|ico|liquid|ya?ml|htaccess|conf|config|ini|lock|toml|env|sql|tpl|twig|hbs|ejs|scss|less)$/i;
 
 /**
  * The container holding the most text, not the first one that matches.

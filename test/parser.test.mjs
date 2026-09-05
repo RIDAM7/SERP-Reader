@@ -372,7 +372,8 @@ test('a filename mentioned in an AI Overview is not a cited domain', () => {
   // eleven citations, because BARE_DOMAIN matches any word.word.
   const html = serpHtml({ aiSources: ['https://tinyseo.example/a'], organic: manyResults(2) }).replace(
     '<ul><li>Structured data helps</li>',
-    '<ul><li>Check your robots.txt</li><li>Submit sitemap.xml</li><li>Add llms.txt</li>',
+    '<ul><li>Check your robots.txt</li><li>Submit sitemap.xml</li><li>Add llms.txt</li>' +
+      '<li>Edit robots.txt.liquid</li><li>Set the .env</li>',
   );
   const d = collect(html);
   const cited = d.aiOverview.sources.map((s) => s.domain);
