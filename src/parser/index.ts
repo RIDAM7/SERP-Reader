@@ -139,3 +139,5 @@ export { isGoogleSerp } from './metadata';
  */
 export { domainFromCite } from './utils';
 export { expandPAA } from './paa';
+// test/reparse.mjs stamps it on a re-read export, whether or not any capture had a snapshot.
+export { PARSER_VERSION } from './selectors';

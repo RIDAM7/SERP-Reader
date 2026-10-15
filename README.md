@@ -96,6 +96,30 @@ first person to open it in a spreadsheet averages across both without noticing.
 
 Examples of each are in `examples/`.
 
+### Re-reading an export
+
+A parser fix reaches captures already exported without searching again, as
+long as they kept their snapshot (`rawHtml`):
+
+```bash
+npm run reparse -- path/to/serps-2026-10-15.json    # writes serps-2026-10-15.reparsed.json beside it
+```
+
+Every capture with a snapshot is read again by today's parser; one without is
+copied as it was and counted. A re-read keeps the capture's `id`,
+`collectedAt` and `metadata` (the language and device came from the live page,
+which a snapshot of the results column cannot say again), takes the counts,
+features and everything else from the re-read, and carries
+`diagnostics.parserVersion` and the envelope's `parserVersion` at today's
+version. It prints what moved per capture (`ai rendered->ai_mode_reply,
+sources 2->19`).
+
+The original is never written: the snapshots in it are the one thing that
+cannot be collected again. Several files, or a glob, can go in one run, and a
+`.reparsed.json` among them is skipped, so the original is what gets re-read.
+The research tooling reads the `.reparsed.json` in place of its original, by
+capture id.
+
 ---
 
 ## Architecture
