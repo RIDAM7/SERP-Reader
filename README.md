@@ -114,6 +114,11 @@ features and everything else from the re-read, and carries
 version. It prints what moved per capture (`ai rendered->ai_mode_reply,
 sources 2->19`).
 
+A re-read leaves the snapshot in the original and says where it is:
+`snapshotIn` is the original's file name, in place of `rawHtml`. The next run
+re-reads the original anyway, so a copy would only be weight: 110 MB against
+4.3 MB on 164 captures.
+
 The original is never written: the snapshots in it are the one thing that
 cannot be collected again. Several files, or a glob, can go in one run, and a
 `.reparsed.json` among them is skipped, so the original is what gets re-read.

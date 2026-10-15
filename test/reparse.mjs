@@ -21,12 +21,17 @@
  *                     snapshot is the results column, so it has no <html lang>,
  *                     and Node has no window to say the device. Only the counts
  *                     and features are the parser's, and those follow the re-read
- *   rawHtml           so the next parser fix can re-read it again
  *
  * Everything else, diagnostics.parserVersion included, is the re-read's.
+ *
+ * The snapshot stays in the original and only there: a re-read carries
+ * `snapshotIn`, the original's file name, in place of rawHtml. The next run
+ * re-reads the original anyway, so a copy would only be weight; on the 164
+ * captures of 2026-10 it is 110 MB against 4.3 MB without. A capture with
+ * no snapshot is copied as it was, and has neither.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseHTML } from 'linkedom';
 import { collectSerp, PARSER_VERSION } from './.parser.mjs';
@@ -67,9 +72,10 @@ export function moved(before, after) {
 
 /**
  * One export's envelope, re-read. Pure: no files. Returns the new envelope and
- * a line per capture.
+ * a line per capture. `snapshotIn` is the original's file name, where every
+ * re-read capture's snapshot stays.
  */
-export function reparseExport(payload) {
+export function reparseExport(payload, { snapshotIn } = {}) {
   const serps = Array.isArray(payload) ? payload : (payload.serps ?? [payload]);
   const lines = [];
   const versions = new Set();
@@ -90,13 +96,14 @@ export function reparseExport(payload) {
     lines.push(`  ${label.padEnd(60)} ${m.length ? m.join(', ') : 'unchanged'}`);
     reread++;
     const { organicResultCount, adCount, paaCount, features } = d.metadata;
+    const { rawHtml, ...reading } = d;
     return {
-      ...d,
+      ...reading,
       id: s.id,
       collectedAt: s.collectedAt,
       // The original's fields win; a field a newer parser adds still comes through.
       metadata: { ...d.metadata, ...s.metadata, organicResultCount, adCount, paaCount, features },
-      rawHtml: s.rawHtml,
+      ...(snapshotIn ? { snapshotIn } : {}),
     };
   });
 
@@ -121,7 +128,7 @@ export function reparseFile(input, { log = console.log } = {}) {
     log(`${input}: not a .json export; skipped`);
     return null;
   }
-  const r = reparseExport(JSON.parse(readFileSync(input, 'utf8')));
+  const r = reparseExport(JSON.parse(readFileSync(input, 'utf8')), { snapshotIn: basename(input) });
   log(input);
   for (const line of r.lines) log(line);
   writeFileSync(target, JSON.stringify(r.envelope, null, 2));

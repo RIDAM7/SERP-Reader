@@ -7,7 +7,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, existsSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -65,7 +65,7 @@ const oldExport = () => ({
 
 test('re-read: identity and what only the live page knew are kept, the rest is the parser of today', () => {
   const before = oldExport();
-  const { envelope, lines, reread, kept, from } = reparseExport(before);
+  const { envelope, lines, reread, kept, from } = reparseExport(before, { snapshotIn: 'serps-2026-10-15.json' });
   const [s, bare] = envelope.serps;
 
   assert.equal(envelope.exportedAt, before.exportedAt);
@@ -78,7 +78,9 @@ test('re-read: identity and what only the live page knew are kept, the rest is t
   assert.equal(s.collectedAt, sidecar.capturedAt);
   assert.equal(s.metadata.timestamp, sidecar.capturedAt);
   assert.equal(s.metadata.language, 'en');
-  assert.equal(s.rawHtml, before.serps[0].rawHtml);
+  // The snapshot stays in the original, which the re-read names.
+  assert.equal(s.rawHtml, undefined);
+  assert.equal(s.snapshotIn, 'serps-2026-10-15.json');
   assert.equal(s.diagnostics.parserVersion, PARSER_VERSION);
 
   // The parser's own readings, and the counts that summarise them, follow the re-read.
@@ -109,7 +111,12 @@ test('re-read file: written beside the original, which is never touched; a re-re
     const target = reparseFile(original, { log: (l) => log.push(l) });
     assert.equal(target, join(dir, 'serps-2026-10-15.reparsed.json'));
     assert.equal(readFileSync(original, 'utf8'), text);
-    assert.equal(JSON.parse(readFileSync(target, 'utf8')).serps[0].aiOverview.status, 'ai_mode_reply');
+    const [reread, bare] = JSON.parse(readFileSync(target, 'utf8')).serps;
+    assert.equal(reread.aiOverview.status, 'ai_mode_reply');
+    assert.equal(reread.snapshotIn, 'serps-2026-10-15.json');
+    assert.ok(!('rawHtml' in reread));
+    assert.ok(!('snapshotIn' in bare), 'a capture with no snapshot points at none');
+    assert.ok(statSync(target).size < statSync(original).size / 10, 'the snapshot is not copied');
     assert.match(log.at(-1), /^1 re-read, 1 without a snapshot kept as they were \(parser 1\.0\.0 -> \d+\.\d+\.\d+\)/);
 
     assert.equal(reparseFile(target, { log: () => {} }), null);
