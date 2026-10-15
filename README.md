@@ -248,15 +248,19 @@ it can only come from a page a person opened.
   being shown. That line ships hidden (inline `display:none`) on nearly every
   SERP, so as text it means nothing: 63 prokopi.in captures of 2026-10-15 read
   as replies that way and were overviews.
-- **Citations are source cards from 2026-10, domain chips before.** Google's
-  AI Mode component labels its chips with site names ("Microsoft Learn"), so
-  since parser 1.2.0 the sources are its cards (`li.Ioqnib`): one per card, the
-  domain read from the card's favicon request or the slot's own record for the
-  card's link, never from the name. The 2026-09 captures hold an earlier card
-  that repeats sources across two lists, and still read the chips, which list
-  only the domains cited inline. Counts are not comparable across that line:
-  re-parsing prokopi.in's 63 overviews of 2026-10-15 took them from 5.3 chips
-  each to 8.8 cards.
+- **Citations are the source cards.** Google's AI Mode component labels its
+  chips with site names ("Microsoft Learn"), so the sources are its cards: one
+  per card, the domain read from the card's favicon request or the slot's own
+  record for the card's link, never from the name. `li.Ioqnib` from 2026-10,
+  `li.Ioqnib`'s predecessor `li.h7wxwc` in 2026-09 (parser 1.3.0), and a strip
+  of preview cards with no list around them. Only a slot with no cards at all
+  reads the chips, which list the domains cited inline and catch words in the
+  prose (`Schema.org markup`). Counts are not comparable with readings before
+  1.3.0: elivateseo.com's 2026-09 captures went from 480 sources to 797, with
+  every chip domain kept but a prose `schema.org` and one from People Also Ask.
+- **An AI answer inside People Also Ask is not the overview.** An expanded PAA
+  answer can be drawn by the same component, and it can be longer than the
+  overview; "entities in seo" was read from one until parser 1.3.0.
 - **AI Overview must be visible.** If it is still streaming or collapsed behind
   "Show more", you get what is rendered. Nothing is guessed at.
 - **PAA answers are lazy.** Google ships questions and fetches answers on click.

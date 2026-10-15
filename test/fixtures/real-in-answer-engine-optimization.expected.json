@@ -3,7 +3,7 @@
   "url": "https://www.google.com/search?q=answer%20engine%20optimization&gl=in&hl=en&pws=0&num=20&sei=MBabapLEKN-UseMP2LCQSA",
   "query": "answer engine optimization",
   "country": "in",
-  "parserVersion": "1.2.0",
+  "parserVersion": "1.3.0",
   "organicCount": 8,
   "firstDomains": [
     "forbes.com",
@@ -16,14 +16,16 @@
   "hasAiOverview": true,
   "aiStatus": "rendered",
   "aiCitationDomains": [
-    "seo.com",
-    "youtube.com",
     "forbes.com",
-    "pwc.com",
     "coursera.org",
-    "parachutedesign.ca",
+    "pwc.com",
     "hubspot.com",
-    "seobility.net"
+    "seobility.net",
+    "youtube.com",
+    "youtube.com",
+    "seo.com",
+    "parachutedesign.ca",
+    "youtube.com"
   ],
   "features": [
     "ai_overview",

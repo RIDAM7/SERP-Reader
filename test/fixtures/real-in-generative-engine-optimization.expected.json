@@ -3,7 +3,7 @@
   "url": "https://www.google.com/search?q=generative%20engine%20optimization&gl=in&hl=en&pws=0&num=20",
   "query": "generative engine optimization",
   "country": "in",
-  "parserVersion": "1.2.0",
+  "parserVersion": "1.3.0",
   "organicCount": 7,
   "firstDomains": [
     "en.wikipedia.org",
@@ -16,8 +16,10 @@
   "hasAiOverview": true,
   "aiStatus": "rendered",
   "aiCitationDomains": [
+    "coursera.org",
     "youtube.com",
-    "coursera.org"
+    "youtube.com",
+    "youtube.com"
   ],
   "features": [
     "ai_overview",

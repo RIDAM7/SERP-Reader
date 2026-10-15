@@ -534,6 +534,44 @@ test('source cards are the citations: one per card, a domain from the card or it
   assert.ok(csv[5].endsWith(',Instagram'), 'a row with no domain says what it was');
 });
 
+test("the 2026-09 card, li.h7wxwc, is read like today's", () => {
+  const cards = sourceCards([
+    { site: 'Marcel Digital', blob: 'CAESjQEB6zswFc51GnOTMarc01', label: 'Mastering B2B SEO', favicon: 'https://www.marceldigital.com' },
+    { site: 'YouTube', blob: 'CAESawHrOzAVN3LA_EP_Tube01', label: 'B2B SEO in 2026', favicon: 'https://www.youtube.com' },
+  ]).replaceAll('class="Ioqnib"', 'class="h7wxwc"');
+  const d = collect(withSlot({ cards }));
+  assert.deepEqual(d.aiOverview.sources.map((c) => [c.domain, c.siteName]), [['marceldigital.com', 'Marcel Digital'], ['youtube.com', 'YouTube']]);
+});
+
+test('a card strip with no card list is read from its cards', () => {
+  // "search and optimization in ai" (2026-09-05): three preview cards, no li around them, and chips that are site names.
+  const cards = sourceCards([
+    { site: 'GeeksforGeeks', blob: 'CAESfwHrOzAVQBck8tNjGeek01', label: 'Search Algorithms in AI', favicon: 'https://www.geeksforgeeks.org' },
+    { site: 'YouTube', blob: 'CAESaQHrOzAVJbMykr8uTube01', label: 'AI Search Optimization Explained', favicon: 'https://www.youtube.com' },
+  ]).replace(/<li class="Ioqnib">|<\/li>/g, '');
+  const d = collect(withSlot({ cards }));
+  assert.deepEqual(d.aiOverview.sources.map((c) => c.domain), ['geeksforgeeks.org', 'youtube.com']);
+});
+
+test("an AI answer inside People Also Ask is never the overview, however long", () => {
+  // "entities in seo" (2026-09-05): a 78,623-character PAA answer beat the 10,767-character overview.
+  const paaAnswer = `<div jscontroller="ogmBcd"><div class="related-question-pair" jsname="Cpkphb" data-q="What are entities in SEO?">
+    <div role="heading">What are entities in SEO?</div>
+    <div class="YzCcne"><div data-subtree="aimc">${'An entity is a thing Google can identify. '.repeat(40)}<a href="/goto?url=CAESbQHrOzAVpexcard01"><span>pexcard.com</span></a></div></div>
+  </div></div>`;
+  const page = withSlot({}).replace('<div id="rso">', `<div id="rso">${paaAnswer}`);
+  const d = collect(page);
+  assert.equal(d.aiOverview.status, 'rendered');
+  assert.deepEqual(d.aiOverview.sources.map((c) => c.domain), ['roadmap.sh', 'coursera.org']);
+  assert.doesNotMatch(d.aiOverview.text, /An entity is a thing/);
+
+  // With no overview of its own, the page has none: the PAA answer is not promoted.
+  const paaOnly = serpHtml({ organic: manyResults(3) }).replace('<div id="rso">', `<div id="rso">${paaAnswer}`);
+  const e = collect(paaOnly);
+  assert.equal(e.aiOverview, undefined);
+  assert.ok(!e.serpFeatures.includes('ai_overview'));
+});
+
 test('a slot without source cards still reads its domain chips', () => {
   const d = collect(withSlot({ label: true, placeholder: 'hidden', aiMode: 'replied' }));
   assert.deepEqual(d.aiOverview.sources.map((c) => c.domain), ['roadmap.sh', 'coursera.org']);

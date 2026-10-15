@@ -12,7 +12,7 @@
  * validation in organic.ts is what stops the noisy fallbacks producing junk.
  */
 
-export const PARSER_VERSION = '1.2.0';
+export const PARSER_VERSION = '1.3.0';
 
 /**
  * Where to scan. First match wins.
@@ -163,7 +163,13 @@ export const AI_OVERVIEW = {
    * domain chips. Alternatives, not parts: the first selector matching any
    * card in the slot is the card list.
    */
-  sourceCards: ['li.Ioqnib'],
+  sourceCards: ['li.Ioqnib', 'li.h7wxwc', 'div[data-src-id]'],
+  /*
+   * People Also Ask's own wrappers. An expanded answer can be drawn by the AI
+   * Mode component, wrappers and cards and all; a container inside one of
+   * these is that answer, never the overview.
+   */
+  notInside: ['div.related-question-pair', '[jsname="Cpkphb"]', 'div[data-initq]', 'div.cUnQKe', 'div[jscontroller="ogmBcd"]'],
   /** Inside a card: its link (a signed /goto) and the site name it shows. */
   sourceCardLink: ['a[href]'],
   sourceCardSiteName: ['span.EsfOKc'],

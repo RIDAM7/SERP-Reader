@@ -12,8 +12,8 @@
 import type { AIOverview, CitedSource } from '../types/serp';
 import { AI_OVERVIEW } from './selectors';
 import {
-  canonicalKey, cleanLabel, domainFromMarkup, domainFromSourceRecord, domainOf, firstGroup, isGoogleInternal, pick,
-  pickAll, resolveHref, text, textFrom,
+  canonicalKey, cleanLabel, closestAny, domainFromMarkup, domainFromSourceRecord, domainOf, firstGroup, isGoogleInternal,
+  pick, pickAll, resolveHref, text, textFrom,
 } from './utils';
 
 /** A bare domain used as a citation chip: `forbes.com`, `seobility.net`. */
@@ -56,9 +56,15 @@ const FILENAME =
  *
  * Picking by content survives Google renaming or reordering those wrappers,
  * which selector ordering does not.
+ *
+ * Never a wrapper inside People Also Ask. An expanded PAA answer can be an AI
+ * answer drawn by the same component, with its own wrappers and cards, and the
+ * longest text wins: on "entities in seo" (2026-09-05) a 78,623-character PAA
+ * answer beat the 10,767-character overview, and its chips were recorded as
+ * the overview's. A slot whose every wrapper is inside PAA has no overview.
  */
 function bestContainer(doc: Document): Element | null {
-  const candidates = pickAll(doc, AI_OVERVIEW.containers);
+  const candidates = pickAll(doc, AI_OVERVIEW.containers).filter((c) => !closestAny(c, AI_OVERVIEW.notInside));
   let best: Element | null = null;
   let bestLen = 0;
   for (const c of candidates) {
@@ -98,11 +104,11 @@ function bestContainer(doc: Document): Element | null {
  * repeated with the same link counts once, and a card with no link (one
  * "Google" card in 633) is not a citation.
  *
- * Only `li.Ioqnib`, the 2026-10 cards. The 2026-09 captures hold an earlier
- * card, `li.h7wxwc`, which in 16 of 90 of them comes in two lists repeating
- * sources under different links and ids that are not unique between the
- * lists; reading those needs its own de-duplication, so they stay on the
- * domain chips below for now.
+ * `li.Ioqnib` is the 2026-10 card and `li.h7wxwc` the 2026-09 one, the same
+ * shape: a signed /goto, the origin in a favicon request, a site name. The
+ * slot holds one card list. The second h7wxwc list that 16 of the 90 2026-09
+ * captures carry is inside People Also Ask, an expanded answer's own sources,
+ * and bestContainer never picks a wrapper there.
  */
 function cardSources(container: Element, pageUrl: string): CitedSource[] {
   const out: CitedSource[] = [];

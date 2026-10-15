@@ -28,6 +28,19 @@ export function pickAll(root: ParentNode, selectors: string[]): Element[] {
   return [...seen];
 }
 
+/** The element itself or its nearest ancestor matching any selector in the list, or null. */
+export function closestAny(el: Element, selectors: string[]): Element | null {
+  for (const sel of selectors) {
+    try {
+      const found = el.closest(sel);
+      if (found) return found;
+    } catch {
+      /* ignore a selector Google's markup has outgrown */
+    }
+  }
+  return null;
+}
+
 /**
  * Visible text, with `<style>` and `<script>` contents removed first.
  *

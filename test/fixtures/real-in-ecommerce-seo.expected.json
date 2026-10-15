@@ -3,7 +3,7 @@
   "url": "https://www.google.com/search?q=ecommerce%20seo&gl=in&hl=en&pws=0&num=20",
   "query": "ecommerce seo",
   "country": "in",
-  "parserVersion": "1.2.0",
+  "parserVersion": "1.3.0",
   "organicCount": 8,
   "firstDomains": [
     "developers.google.com",
@@ -16,14 +16,14 @@
   "hasAiOverview": true,
   "aiStatus": "rendered",
   "aiCitationDomains": [
+    "sana-commerce.com",
+    "developers.google.com",
     "geeksforgeeks.org",
     "coursera.org",
-    "wisepim.com",
-    "developers.google.com",
     "semrush.com",
     "bigcommerce.com",
-    "sana-commerce.com",
-    "networksolutions.com"
+    "networksolutions.com",
+    "wisepim.com"
   ],
   "features": [
     "ai_overview",
