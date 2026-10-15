@@ -12,7 +12,7 @@
  * validation in organic.ts is what stops the noisy fallbacks producing junk.
  */
 
-export const PARSER_VERSION = '1.1.0';
+export const PARSER_VERSION = '1.2.0';
 
 /**
  * Where to scan. First match wins.
@@ -158,6 +158,15 @@ export const AI_OVERVIEW = {
    * rendered overview too — which is why a marker alone never decides.
    */
   aiModeLabel: ['div[data-subtree="aimc"] h3', 'h3'],
+  /*
+   * The source cards, one per cited page, read in aiOverview.ts before the
+   * domain chips. Alternatives, not parts: the first selector matching any
+   * card in the slot is the card list.
+   */
+  sourceCards: ['li.Ioqnib'],
+  /** Inside a card: its link (a signed /goto) and the site name it shows. */
+  sourceCardLink: ['a[href]'],
+  sourceCardSiteName: ['span.EsfOKc'],
 };
 
 export const FEATURED_SNIPPET = [

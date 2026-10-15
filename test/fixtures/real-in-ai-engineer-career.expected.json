@@ -3,7 +3,7 @@
   "url": "https://www.google.com/search?q=ai%20engineer%20career&gl=in&hl=en&pws=0&num=20",
   "query": "ai engineer career",
   "country": "in",
-  "parserVersion": "1.1.0",
+  "parserVersion": "1.2.0",
   "organicCount": 9,
   "firstDomains": [
     "learn.microsoft.com",
@@ -16,8 +16,25 @@
   "hasAiOverview": false,
   "aiStatus": "ai_mode_reply",
   "aiCitationDomains": [
+    "learn.microsoft.com",
+    "coursera.org",
     "roadmap.sh",
-    "naukri.com"
+    "udemy.com",
+    "youtube.com",
+    "openai.com",
+    "amazon.jobs",
+    "dataexpert.io",
+    "codecademy.com",
+    "youtube.com",
+    "naukri.com",
+    "youtube.com",
+    "coursera.org",
+    "youtube.com",
+    "tcs.com",
+    "engg.cambridge.edu.in",
+    "karpagamtech.ac.in",
+    "accenture.com",
+    "in.linkedin.com"
   ],
   "features": [
     "ai_mode_reply",

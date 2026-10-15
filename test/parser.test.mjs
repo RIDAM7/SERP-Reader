@@ -13,7 +13,7 @@ import { parseHTML } from 'linkedom';
 
 import { collectSerp, isGoogleSerp, domainFromCite } from './.parser.mjs';
 import { aiCitationsCsv, organicCsv, paaCsv, serpsJson } from './.export.mjs';
-import { aiSlotBlock, manyResults, serpHtml } from './fixtures.mjs';
+import { aiSlotBlock, manyResults, serpHtml, sourceCards } from './fixtures.mjs';
 
 const URL_US = 'https://www.google.com/search?q=generative+engine+optimization&gl=us&hl=en&pws=0&num=20';
 
@@ -505,4 +505,37 @@ test('content with no AI Mode marker stays an overview, whatever the label says'
   const d = collect(withSlot({ label: false, placeholder: null, aiMode: null }));
   assert.equal(d.aiOverview?.status, 'rendered');
   assert.equal(d.aiOverview.present, true);
+});
+
+/* ------------------------------------------- the AI Mode component's source cards */
+
+test('source cards are the citations: one per card, a domain from the card or its record, and the site name', () => {
+  const cards = sourceCards([
+    { site: 'Udemy', blob: 'CAESZAHrOzAVSvGqjFVmUdemy01', label: 'AI Engineer Career Accelerator', favicon: 'https://www.udemy.com' },
+    { site: 'YouTube', blob: 'CAESawHrOzAVN3LA_EP_Tube01', label: 'A practical Guide To Becoming An AI Engineer', record: 'https://www.youtube.com' },
+    { site: 'Coursera', blob: 'CAESaAHrOzAVVAYcUdwzCour01', label: 'What Is an AI Engineer?', favicon: 'https://www.coursera.org' },
+    { site: 'Coursera', blob: 'CAESawHrOzAVH_roX2cSCour02', label: 'Who Is an AI Engineer?', favicon: 'https://www.coursera.org' },
+    // A record exists, but for a longer link that merely starts with this card's.
+    { site: 'Instagram', blob: 'CAESZgHrOzAVMGzUH7kWInst01', label: 'Roadmap To Become AI Engineer', record: { origin: 'https://www.linkedin.com', blob: 'CAESZgHrOzAVMGzUH7kWInst01xyz' } },
+  ]);
+  const d = collect(withSlot({ label: true, placeholder: 'hidden', aiMode: 'replied', cards }));
+  const s = d.aiOverview.sources;
+
+  assert.equal(d.aiOverview.status, 'rendered');
+  assert.deepEqual(s.map((c) => c.domain), ['udemy.com', 'youtube.com', 'coursera.org', 'coursera.org', '']);
+  assert.deepEqual(s.map((c) => c.siteName), ['Udemy', 'YouTube', 'Coursera', 'Coursera', 'Instagram']);
+  assert.deepEqual(s.map((c) => c.order), [1, 2, 3, 4, 5]);
+  assert.equal(s[0].title, 'AI Engineer Career Accelerator', 'the screen-reader suffix is not part of the title');
+  assert.ok(s.every((c) => c.url.startsWith('https://www.google.com/goto?url=')), 'a signed link is kept as the honest redirect');
+  assert.ok(!s.some((c) => c.domain === 'roadmap.sh'), 'the domain chips were added on top of the cards');
+
+  const csv = aiCitationsCsv([d]).trim().split('\r\n');
+  assert.ok(csv[0].endsWith(',serp_id,site_name'), 'site_name is appended, not inserted');
+  assert.ok(csv[5].endsWith(',Instagram'), 'a row with no domain says what it was');
+});
+
+test('a slot without source cards still reads its domain chips', () => {
+  const d = collect(withSlot({ label: true, placeholder: 'hidden', aiMode: 'replied' }));
+  assert.deepEqual(d.aiOverview.sources.map((c) => c.domain), ['roadmap.sh', 'coursera.org']);
+  assert.ok(d.aiOverview.sources.every((c) => c.siteName === undefined));
 });

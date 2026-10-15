@@ -11,7 +11,10 @@
  */
 import type { AIOverview, CitedSource } from '../types/serp';
 import { AI_OVERVIEW } from './selectors';
-import { pickAll, resolveHref, text, textFrom } from './utils';
+import {
+  canonicalKey, cleanLabel, domainFromMarkup, domainFromSourceRecord, domainOf, firstGroup, isGoogleInternal, pick,
+  pickAll, resolveHref, text, textFrom,
+} from './utils';
 
 /** A bare domain used as a citation chip: `forbes.com`, `seobility.net`. */
 const BARE_DOMAIN = /^(?=.{4,80}$)([a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}$/i;
@@ -80,7 +83,62 @@ function bestContainer(doc: Document): Element | null {
 }
 
 /**
+ * Citations from the source cards: one per card, in the cards' own order.
+ *
+ * Google's AI Mode component, which draws overviews and AI Mode replies alike
+ * from 2026-10, labels its chips with site names, not domains. On the 9 AI Mode
+ * replies among prokopi.in's 2026-10-15 captures the chips gave 0 to 2
+ * citations each, against 7 to 19 cards. A card's link is a signed /goto, so
+ * its domain is read from the card's markup, failing that from the source
+ * record the slot keeps for that exact link, and its site name is kept beside
+ * it. A card with neither keeps an empty domain and its site name: none on
+ * those captures, which is not a promise about the next ones.
+ *
+ * Two cards for one domain are two cited pages and stay two entries. A card
+ * repeated with the same link counts once, and a card with no link (one
+ * "Google" card in 633) is not a citation.
+ *
+ * Only `li.Ioqnib`, the 2026-10 cards. The 2026-09 captures hold an earlier
+ * card, `li.h7wxwc`, which in 16 of 90 of them comes in two lists repeating
+ * sources under different links and ids that are not unique between the
+ * lists; reading those needs its own de-duplication, so they stay on the
+ * domain chips below for now.
+ */
+function cardSources(container: Element, pageUrl: string): CitedSource[] {
+  const out: CitedSource[] = [];
+  const seen = new Set<string>();
+  let slotHtml: string | null = null;
+  const fromRecord = (href: string | null) => domainFromSourceRecord((slotHtml ??= container.outerHTML ?? ''), href);
+
+  for (const card of firstGroup(container, AI_OVERVIEW.sourceCards)) {
+    const anchor = pick(card, AI_OVERVIEW.sourceCardLink);
+    const resolved = anchor ? resolveHref(anchor.getAttribute('href'), pageUrl) : null;
+    if (!anchor || !resolved) continue;
+    if (!resolved.isRedirect && isGoogleInternal(resolved.url)) continue;
+    const key = resolved.isRedirect ? resolved.url : canonicalKey(resolved.url);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const siteName = textFrom(card, AI_OVERVIEW.sourceCardSiteName) || undefined;
+    const source: CitedSource = {
+      title: cleanLabel(anchor.getAttribute('aria-label')) || text(anchor) || undefined,
+      url: resolved.url,
+      domain: resolved.isRedirect
+        ? domainFromMarkup(card) || fromRecord(anchor.getAttribute('href'))
+        : domainOf(resolved.url).toLowerCase(),
+      order: out.length + 1,
+    };
+    if (siteName) source.siteName = siteName;
+    out.push(source);
+  }
+  return out;
+}
+
+/**
  * Citations, found via the visible domain chips rather than the anchors.
+ *
+ * The fallback for an overview without source cards: Google's markup until
+ * 2026-10, and the synthetic fixtures.
  *
  * The anchors are useless on their own: their text is empty, they carry no
  * `cite`, and their href is a `/goto` redirect. What is readable is the chip
@@ -193,7 +251,8 @@ export function parseAIOverview(doc: Document, pageUrl: string): AIOverview {
    * Content means a citation, or real text once the placeholder above is
    * removed. Both are absent from an empty wrapper.
    */
-  const sources = citations(container, pageUrl);
+  const cards = cardSources(container, pageUrl);
+  const sources = cards.length ? cards : citations(container, pageUrl);
   const substantive = body.replace(AIO_PLACEHOLDER, '').trim();
   const refused = placeholderShown(container);
   if (!sources.length && substantive.length < 40) {

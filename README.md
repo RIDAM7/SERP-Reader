@@ -65,7 +65,7 @@ where you put it.
 | **Organic results** | Up to 25. Position, title, URL, domain, displayed URL, snippet, favicon, sitelinks |
 | **Ads** | Captured separately, never given an organic position |
 | **People Also Ask** | Question, answer if rendered, source URL and domain, order, whether it was expanded |
-| **AI Overview** | Heading, text, bullets, and **cited sources in order**, and a `status` saying what filled the slot: `rendered`, `ai_mode_reply` or `unavailable` |
+| **AI Overview** | Heading, text, bullets, and **cited sources in order** (one per source card, with its domain and the site name it shows), and a `status` saying what filled the slot: `rendered`, `ai_mode_reply` or `unavailable` |
 | **Featured snippet** | Text and source |
 | **Related searches** | And "people also search for" |
 | **SERP features** | 17 detected: AI Overview, featured snippet, PAA, local pack, video, news, top stories, images, shopping, discussions, Twitter/X, Reddit, knowledge panel, related searches, people also search for, sitelinks, ads |
@@ -86,7 +86,7 @@ exports as its own CSV.
 serps-YYYY-MM-DD.json            everything, raw HTML omitted
 organic_results-YYYY-MM-DD.csv   one row per result
 paa-YYYY-MM-DD.csv               one row per question
-ai_citations-YYYY-MM-DD.csv      one row per cited source
+ai_citations-YYYY-MM-DD.csv      one row per cited source, site_name last
 serp_features-YYYY-MM-DD.csv     one row per SERP
 ```
 
@@ -219,6 +219,15 @@ it can only come from a page a person opened.
   being shown. That line ships hidden (inline `display:none`) on nearly every
   SERP, so as text it means nothing: 63 prokopi.in captures of 2026-10-15 read
   as replies that way and were overviews.
+- **Citations are source cards from 2026-10, domain chips before.** Google's
+  AI Mode component labels its chips with site names ("Microsoft Learn"), so
+  since parser 1.2.0 the sources are its cards (`li.Ioqnib`): one per card, the
+  domain read from the card's favicon request or the slot's own record for the
+  card's link, never from the name. The 2026-09 captures hold an earlier card
+  that repeats sources across two lists, and still read the chips, which list
+  only the domains cited inline. Counts are not comparable across that line:
+  re-parsing prokopi.in's 63 overviews of 2026-10-15 took them from 5.3 chips
+  each to 8.8 cards.
 - **AI Overview must be visible.** If it is still streaming or collapsed behind
   "Show more", you get what is rendered. Nothing is guessed at.
 - **PAA answers are lazy.** Google ships questions and fetches answers on click.

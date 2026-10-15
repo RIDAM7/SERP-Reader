@@ -59,16 +59,20 @@ export function paaCsv(serps: SerpData[]): string {
  * The most valuable export for GEO work and the reason a third file exists:
  * "which domains does Google quote for this query" is a different question from
  * "what ranks", and squeezing it into the organic CSV would hide it.
+ *
+ * `site_name` is last so readers keyed on the older columns' positions keep
+ * working. It is the name a source card shows, and what a row with an empty
+ * domain was.
  */
 export function aiCitationsCsv(serps: SerpData[]): string {
-  const header = ['keyword', 'timestamp', 'country', 'citation_order', 'title', 'url', 'domain', 'serp_id'];
+  const header = ['keyword', 'timestamp', 'country', 'citation_order', 'title', 'url', 'domain', 'serp_id', 'site_name'];
   const rows: unknown[][] = [];
   for (const s of serps) {
     if (!s.aiOverview?.present) continue;
     for (const c of s.aiOverview.sources) {
       rows.push([
         s.metadata.query, s.collectedAt, s.metadata.country ?? '', c.order,
-        c.title ?? '', c.url, c.domain, s.id,
+        c.title ?? '', c.url, c.domain, s.id, c.siteName ?? '',
       ]);
     }
   }

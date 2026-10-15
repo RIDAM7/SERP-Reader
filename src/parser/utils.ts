@@ -54,6 +54,26 @@ export function text(el: Element | null | undefined): string {
   return (source.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Every match of the FIRST selector in the list that matches anything.
+ *
+ * For a list whose entries are alternatives rather than parts, where a union
+ * would mix two things: one generation of Google's source cards per list
+ * entry, never a list that adds the next generation's cards to the last's.
+ * Answer Reader's firstGroup.
+ */
+export function firstGroup(root: ParentNode, selectors: string[]): Element[] {
+  for (const sel of selectors) {
+    try {
+      const found = Array.from(root.querySelectorAll(sel));
+      if (found.length) return found;
+    } catch {
+      /* ignore a selector Google's markup has outgrown */
+    }
+  }
+  return [];
+}
+
 /** First non-empty text from a list of selectors. */
 export function textFrom(root: ParentNode, selectors: string[]): string {
   for (const sel of selectors) {
@@ -200,6 +220,82 @@ export function domainOf(url: string): string {
   } catch {
     return '';
   }
+}
+
+/** Hosts in a card's markup that are Google's plumbing or a namespace, never the publisher. */
+const MARKUP_NOISE_HOSTS = /^google[.][a-z.]+$|(^|[.])(gstatic[.]com|googleusercontent[.]com|googleapis[.]com|w3[.]org|schema[.]org)$/i;
+
+/**
+ * A destination domain read from a source card's own markup, for a card whose
+ * link is a signed /goto.
+ *
+ * Google's AI Mode component draws a source as a card with a site name
+ * ("Microsoft Learn", "Roadmap.sh") and no bare domain anywhere in its text,
+ * which is why the domain chips stopped yielding citations. The origin is
+ * usually still in the card: in a favicon request
+ * (`faviconV2?url=https://www.udemy.com`, or `=` in its inline data), or
+ * elsewhere in its markup. On the "ai engineer career" capture that is 15 of
+ * 19 cards; the other four are YouTube cards with a thumbnail and no origin,
+ * and domainFromSourceRecord answers for them. Nothing is reconstructed from a
+ * site name.
+ *
+ * Answer Reader's domainFromMarkup, with the host cut out by string work rather
+ * than `new URL()` — the domainFromCite lesson: whatever the favicon parameter
+ * holds is not handed to a parser that Chrome and Node run differently.
+ * `outerHTML` is markup, so a live capture and its snapshot agree: Chrome
+ * writes `&amp;` where linkedom writes `&`, and both end the parameter there.
+ */
+export function domainFromMarkup(el: Element): string {
+  const html = el.outerHTML ?? '';
+  const favicon = html.match(/faviconV2\?url(?:=|\\u003d|%3D)(https?:\/\/[^&"'\\\s]+)/i);
+  const origins = [favicon?.[1], ...Array.from(html.matchAll(/https?:\/\/[a-z0-9.-]+\.[a-z]{2,24}(?=[/"'&\\\s:]|$)/gi), (m) => m[0])];
+  for (const origin of origins) {
+    if (!origin) continue;
+    const host = origin
+      .replace(/^https?:\/\//i, '')
+      .replace(/[/?#:].*$/, '')
+      .replace(/^www\./i, '')
+      .toLowerCase();
+    // Google's own properties that publish (developers.google.com, cloud.google.com) stay: see GOOGLE_UI_HOSTS.
+    if (HOSTNAME.test(host) && !MARKUP_NOISE_HOSTS.test(host)) return host;
+  }
+  return '';
+}
+
+/**
+ * The origin the page's own source record pairs with one /goto link.
+ *
+ * For a card whose markup names no origin: the light YouTube, Instagram and
+ * LinkedIn cards, 118 of the 632 linked cards on prokopi.in's 2026-10-15
+ * captures. The AI Mode component keeps a record per source in its inline
+ * data, as `"https://www.youtube.com",["YouTube","Jean Lee"],"/goto?url=CAESawHr…"`
+ * — the origin, the names the card shows, and the card's exact signed link.
+ * All 118 have one inside the slot; on the 508 cards where the card's markup
+ * and the record both name a domain, they agree every time.
+ *
+ * Keyed by the whole link, so a record can only answer for its own card.
+ * Quotes appear as `"` in a script and `&quot;` in an attribute, `=` as itself
+ * or `=`, in Chrome and linkedom alike.
+ */
+export function domainFromSourceRecord(html: string, href: string | null | undefined): string {
+  const blob = (href ?? '').match(/[?&]url=([A-Za-z0-9_-]{16,})/)?.[1];
+  if (!blob) return '';
+  const q = '(?:"|&quot;)';
+  const record = new RegExp(
+    `${q}(https?://[a-z0-9.-]+[.][a-z]{2,24})${q},\\[[^\\]]{0,400}\\],${q}/goto[?]url(?:=|\\\\u003d)${blob}(?![A-Za-z0-9_-])`,
+    'i',
+  );
+  const host = (html.match(record)?.[1] ?? '').replace(/^https?:\/\//i, '').replace(/^www\./i, '').toLowerCase();
+  return HOSTNAME.test(host) && !MARKUP_NOISE_HOSTS.test(host) ? host : '';
+}
+
+/** An outbound link's aria-label without the screen-reader suffix Google appends: "Title. Opens in new tab.", "…, video, open in an external site". */
+export function cleanLabel(label: string | null | undefined): string {
+  return (label ?? '')
+    .replace(/\s+/g, ' ')
+    .replace(/\.?\s*Opens in (a )?new (tab|window)\.?$/i, '')
+    .replace(/,?\s*open in an external site\.?$/i, '')
+    .trim();
 }
 
 /**

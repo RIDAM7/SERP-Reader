@@ -109,3 +109,43 @@ for (const file of captures) {
     }
   });
 }
+
+/*
+ * The AI Mode component's source cards, on Google's own markup.
+ *
+ * The sidecar pins the domains; this pins how they were found, so a change
+ * that keeps the list but loses a route shows up as that. On this capture the
+ * chips gave two citations ("Roadmap.sh" and "Naukri.com" happen to be
+ * domain-shaped names) against 19 cards.
+ */
+test('real capture: an AI Mode reply cites its 19 source cards, each with a domain and a site name', () => {
+  const html = readFileSync(join(FIXTURES, 'real-in-ai-engineer-career.html'), 'utf8');
+  const doc = parseHTML(html).document;
+  const d = collectSerp(doc, 'https://www.google.com/search?q=ai%20engineer%20career&gl=in&hl=en&pws=0&num=20', {
+    includeRawHtml: false,
+  });
+  const s = d.aiOverview?.sources ?? [];
+  const cards = Array.from(doc.querySelectorAll('li.Ioqnib'));
+
+  assert.equal(d.aiOverview?.status, 'ai_mode_reply');
+  assert.equal(s.length, 19, 'one entry per card');
+  assert.deepEqual(s.map((c) => c.order), s.map((_, i) => i + 1));
+  assert.ok(s.every((c) => c.domain), 'a card came back without a domain');
+  assert.ok(s.every((c) => c.siteName), 'a card came back without its site name');
+  assert.ok(s.every((c) => /^https:\/\/www\.google\.com\/goto\?url=/.test(c.url)));
+  assert.ok(s.every((c) => c.title && !/opens in (a )?new tab|external site/i.test(c.title)));
+
+  // The three routes to a domain, each on a card that can only have taken it.
+  assert.match(cards[3].outerHTML, /faviconV2\?url=https:\/\/www\.udemy\.com/);
+  assert.deepEqual([s[3].siteName, s[3].domain], ['Udemy', 'udemy.com'], 'from the favicon request');
+  assert.doesNotMatch(cards[0].outerHTML, /faviconV2\?url=/);
+  assert.match(cards[0].outerHTML, /faviconV2\?url\\u003dhttps:\/\/learn\.microsoft\.com/);
+  assert.deepEqual([s[0].siteName, s[0].domain], ['Microsoft Learn', 'learn.microsoft.com'], "from the card's inline data, escaped");
+  for (const i of [4, 9, 11, 13]) {
+    assert.doesNotMatch(cards[i].outerHTML, /youtube\.com/i, `card ${i + 1} names its origin after all`);
+    assert.deepEqual([s[i].siteName, s[i].domain], ['YouTube', 'youtube.com'], `card ${i + 1}: from the slot's source record`);
+  }
+
+  // Two Coursera pages are two citations.
+  assert.equal(s.filter((c) => c.domain === 'coursera.org').length, 2);
+});

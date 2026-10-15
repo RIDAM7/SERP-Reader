@@ -145,8 +145,9 @@ export const manyResults = (n, prefix = 'result') =>
  *                overviews too) or 'reply-for' ("AI Mode reply for <query>",
  *                the slot holding a reply and no overview), or null
  *   body         false for an empty slot
+ *   cards        source cards inside the component, as sourceCards() writes them
  */
-export const aiSlotBlock = ({ label = true, placeholder = 'hidden', aiMode = 'replied', body = true, query = 'ai engineer career' } = {}) => `
+export const aiSlotBlock = ({ label = true, placeholder = 'hidden', aiMode = 'replied', body = true, query = 'ai engineer career', cards = '' } = {}) => `
   <div class="YzCcne">
     <div class="nk9vdc GYaNDc">
       ${
@@ -163,7 +164,42 @@ export const aiSlotBlock = ({ label = true, placeholder = 'hidden', aiMode = 're
       <div>An AI engineer builds, tests and deploys applications on top of machine learning models, rather than training the models themselves.</div>
       <a href="/goto?url=CAESWQHrOzAV6xEV"><span>roadmap.sh</span></a>
       <a href="/goto?url=CAESfgHrOzAV9w3l"><span>coursera.org</span></a>
+      ${cards}
     </div>`
         : ''
     }
   </div>`;
+
+/**
+ * The AI Mode component's source list, shaped like the 2026-10-15 captures:
+ * `li.Ioqnib` cards whose link is a signed /goto and whose text is a site name,
+ * plus the component's inline source records (origin, names, link) in a data
+ * attribute, where Chrome and linkedom both write quotes as &quot;.
+ *
+ *   { site, blob, label, favicon?, record? }
+ *     favicon  an origin in the card's own favicon request
+ *     record   an origin in the slot's source record for this card's link,
+ *              or { origin, blob } for a record that belongs to another link
+ */
+export const sourceCards = (cards) => {
+  const records = cards
+    .filter((c) => c.record)
+    .map((c) => {
+      const r = typeof c.record === 'string' ? { origin: c.record, blob: c.blob } : c.record;
+      return `[&quot;${r.origin}&quot;,[&quot;${c.site}&quot;],&quot;/goto?url\\u003d${r.blob}&quot;]`;
+    })
+    .join(',');
+  const items = cards
+    .map(
+      (c) => `<li class="Ioqnib"><div class="cRH23c g7lqo" data-src-id="1">
+        <a class="vIWmYe" aria-label="${c.label}. Opens in new tab." href="/goto?url=${c.blob}"></a>
+        <div class="Wgphwb"><div class="xWZV4e">
+          <div class="NTHYXc"><img class="sGgDgb" src="${c.favicon ? `https://encrypted-tbn2.gstatic.com/faviconV2?url=${c.favicon}&amp;client=AIM&amp;size=128` : 'data:image/png;base64,iVBORw0KGgo='}" alt=""></div>
+          <div class="jdxGff"><span class="k0vrc"><span class="EsfOKc"><span>${c.site}</span></span></span></div>
+        </div></div>
+      </li>`,
+    )
+    .join('');
+  return `<div class="IQTBxd"><div class="eFSEae"><ul class="hJYS7c">${items}</ul></div></div>
+    <div data-src-records="[${records}]"></div>`;
+};

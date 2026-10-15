@@ -80,7 +80,14 @@ export interface PAAItem {
 export interface CitedSource {
   title?: string;
   url: string;
+  /**
+   * Empty when neither a source card's markup nor the slot's record for its
+   * link names an origin — no card on the 2026-10-15 captures, but nothing
+   * guarantees the next. `siteName` then says what it was.
+   */
   domain: string;
+  /** The name a source card shows ("Microsoft Learn", "YouTube"). Absent for a domain chip, which shows the domain. */
+  siteName?: string;
   /** Order the citation appears in, 1-based. */
   order: number;
 }
