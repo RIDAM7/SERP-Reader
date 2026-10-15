@@ -12,7 +12,7 @@
  * validation in organic.ts is what stops the noisy fallbacks producing junk.
  */
 
-export const PARSER_VERSION = '1.0.0';
+export const PARSER_VERSION = '1.1.0';
 
 /**
  * Where to scan. First match wins.
@@ -145,6 +145,19 @@ export const AI_OVERVIEW = {
   text: ['div[data-attrid] span', 'div.WaaZC', 'div[jsname="txFAF"]', 'p'],
   bullets: ['li'],
   sources: ['a[href^="http"]'],
+  /*
+   * The slot's own "AI Overview" label, matched by its text in aiOverview.ts;
+   * this only says where to look. Measured on 164 captures (2026-09-04 to
+   * 2026-10-15): the label is a div.Fzsovc[role=heading], beside a span.YWpX0d
+   * placeholder that Google ships with an inline display:none.
+   */
+  label: ['div.Fzsovc[role="heading"]', '[role="heading"]'],
+  /*
+   * The AI Mode reply component. Its h3 reads "AI Mode reply for <query>" when
+   * the slot holds a reply and no overview, and "AI Mode replied:" inside a
+   * rendered overview too — which is why a marker alone never decides.
+   */
+  aiModeLabel: ['div[data-subtree="aimc"] h3', 'h3'],
 };
 
 export const FEATURED_SNIPPET = [

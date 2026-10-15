@@ -132,3 +132,38 @@ export const manyResults = (n, prefix = 'result') =>
     displayed: `site${i + 1}.example.com › page`,
     snippet: `Snippet for ${prefix} ${i + 1}.`,
   }));
+
+/**
+ * Google's AI slot as it shipped from 2026-09 on: the overview and an AI Mode
+ * reply are both drawn by the AI Mode component, so the markers below are
+ * copied from real captures rather than from selectors.ts.
+ *
+ *   label        the visible "AI Overview" heading (div.Fzsovc[role=heading])
+ *   placeholder  'hidden' (inline display:none, as on all 164 real captures),
+ *                'shown', or null
+ *   aiMode       the component's h3: 'replied' ("AI Mode replied:", inside real
+ *                overviews too) or 'reply-for' ("AI Mode reply for <query>",
+ *                the slot holding a reply and no overview), or null
+ *   body         false for an empty slot
+ */
+export const aiSlotBlock = ({ label = true, placeholder = 'hidden', aiMode = 'replied', body = true, query = 'ai engineer career' } = {}) => `
+  <div class="YzCcne">
+    <div class="nk9vdc GYaNDc">
+      ${
+        placeholder
+          ? `<span class="YWpX0d" jsname="lGsj1"${placeholder === 'hidden' ? ' style="display:none"' : ''}><span>An AI Overview is not available for this search</span><span>Can't generate an AI overview right now. Try again later.</span></span>`
+          : ''
+      }
+      ${label ? '<div class="Fzsovc" jsname="cUzNTd" role="heading" aria-level="2">AI Overview</div>' : ''}
+    </div>
+    ${
+      body
+        ? `<div data-subtree="aimc">
+      ${aiMode === 'replied' ? '<h3 class="MheKwc">AI Mode replied:</h3>' : aiMode === 'reply-for' ? `<h3 class="MheKwc">AI Mode reply for ${query}</h3>` : ''}
+      <div>An AI engineer builds, tests and deploys applications on top of machine learning models, rather than training the models themselves.</div>
+      <a href="/goto?url=CAESWQHrOzAV6xEV"><span>roadmap.sh</span></a>
+      <a href="/goto?url=CAESfgHrOzAV9w3l"><span>coursera.org</span></a>
+    </div>`
+        : ''
+    }
+  </div>`;

@@ -75,7 +75,11 @@ for (const file of captures) {
     );
     assert.equal(d.paa.length, expected.paaCount, 'PAA count changed since import');
     assert.equal(Boolean(d.aiOverview?.present), expected.hasAiOverview, 'AI Overview presence changed');
-    if (expected.hasAiOverview) {
+    if ('aiStatus' in expected) {
+      assert.equal(d.aiOverview?.status ?? null, expected.aiStatus, 'what filled the AI Overview slot changed since import');
+    }
+    // An AI Mode reply's sources are kept too, so they are pinned the same way.
+    if (expected.hasAiOverview || expected.aiStatus) {
       assert.deepEqual(
         (d.aiOverview?.sources ?? []).map((c) => c.domain),
         expected.aiCitationDomains,

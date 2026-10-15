@@ -1,0 +1,29 @@
+{
+  "capturedAt": "2026-10-15T06:13:39.968Z",
+  "url": "https://www.google.com/search?q=ai%20engineer%20career&gl=in&hl=en&pws=0&num=20",
+  "query": "ai engineer career",
+  "country": "in",
+  "parserVersion": "1.1.0",
+  "organicCount": 9,
+  "firstDomains": [
+    "learn.microsoft.com",
+    "naukri.com",
+    "coursera.org",
+    "tcs.com",
+    "amazon.jobs"
+  ],
+  "paaCount": 4,
+  "hasAiOverview": false,
+  "aiStatus": "ai_mode_reply",
+  "aiCitationDomains": [
+    "roadmap.sh",
+    "naukri.com"
+  ],
+  "features": [
+    "ai_mode_reply",
+    "people_also_ask",
+    "related_searches"
+  ],
+  "adCount": 0,
+  "adDomains": []
+}

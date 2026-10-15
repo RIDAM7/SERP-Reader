@@ -79,13 +79,13 @@ function render() {
     const feats = document.createElement('td');
     const chips = document.createElement('div');
     chips.className = 'chips';
-    if (s.hasAiOverview) {
+    if (s.hasAiOverview || s.aiStatus === 'ai_mode_reply') {
       const c = document.createElement('span');
       c.className = 'chip aio';
-      c.textContent = 'AI Overview';
+      c.textContent = s.hasAiOverview ? 'AI Overview' : 'AI Mode reply';
       chips.append(c);
     }
-    for (const f of s.features.filter((x) => x !== 'ai_overview').slice(0, 5)) {
+    for (const f of s.features.filter((x) => x !== 'ai_overview' && x !== 'ai_mode_reply').slice(0, 5)) {
       const c = document.createElement('span');
       c.className = 'chip';
       c.textContent = f.replace(/_/g, ' ');

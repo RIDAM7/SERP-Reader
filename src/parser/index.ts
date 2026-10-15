@@ -67,7 +67,17 @@ export function collectSerp(doc: Document, pageUrl: string, opts: CollectOptions
   const featuredSnippet = safely('featuredSnippet', warnings, () => parseFeaturedSnippet(doc, pageUrl), {
     present: false,
   });
-  const serpFeatures = safely<SerpFeature[]>('features', warnings, () => detectFeatures(doc), []);
+  /*
+   * One fact, one answer. detectFeatures sees the slot's markers and content,
+   * not what filled it, so a reply in the slot read as `ai_overview` there while
+   * aiOverview said otherwise. The slot's status decides both.
+   */
+  const serpFeatures = safely<SerpFeature[]>('features', warnings, () => detectFeatures(doc), []).flatMap(
+    (f): SerpFeature[] => {
+      if (f !== 'ai_overview' || aiOverview.present) return [f];
+      return aiOverview.status === 'ai_mode_reply' ? ['ai_mode_reply'] : [];
+    },
+  );
   const relatedSearches = safely('relatedSearches', warnings, () => parseRelatedSearches(doc), []);
   const peopleAlsoSearchFor = safely('peopleAlsoSearchFor', warnings, () => parsePeopleAlsoSearchFor(doc), []);
 
@@ -91,7 +101,8 @@ export function collectSerp(doc: Document, pageUrl: string, opts: CollectOptions
     organicResults: organicResult.organic,
     ads: organicResult.ads,
     paa,
-    aiOverview: aiOverview.present ? aiOverview : undefined,
+    // Kept when it says something: an overview, a reply in its place, or Google saying it had none.
+    aiOverview: aiOverview.present || aiOverview.status ? aiOverview : undefined,
     featuredSnippet: featuredSnippet.present ? featuredSnippet : undefined,
     serpFeatures,
     relatedSearches,
@@ -102,7 +113,13 @@ export function collectSerp(doc: Document, pageUrl: string, opts: CollectOptions
       validOrganic: organicResult.organic.length,
       rejected: organicResult.rejected,
       paaDetected: paa.length,
-      aiOverview: aiOverview.present ? 'detected' : 'not detected',
+      aiOverview: aiOverview.present
+        ? 'detected'
+        : aiOverview.status === 'ai_mode_reply'
+          ? 'ai mode reply'
+          : aiOverview.status === 'unavailable'
+            ? 'unavailable'
+            : 'not detected',
       localPack: serpFeatures.includes('local_pack') ? 'detected' : 'not detected',
       parserVersion: PARSER_VERSION,
       warnings,

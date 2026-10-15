@@ -129,6 +129,50 @@ function citations(container: Element, pageUrl: string): CitedSource[] {
 const AIO_PLACEHOLDER =
   /An AI Overview is not available for this search|Can't generate an AI overview right now|Try again later/gi;
 
+/**
+ * Hidden in the markup itself: an inline display:none or visibility:hidden, or
+ * the `hidden` attribute, on the element or any ancestor.
+ *
+ * Markup only, never getComputedStyle, so a live capture and a re-parse of its
+ * snapshot under Node give the same answer — the lesson of domainFromCite. It is
+ * enough for the placeholder: on all 164 captures to 2026-10-15 Google hid it
+ * with an inline style. aria-hidden is not hiding: it hides from screen
+ * readers, not from the eye.
+ */
+function hiddenInMarkup(el: Element): boolean {
+  for (let e: Element | null = el; e; e = e.parentElement) {
+    const style = (e.getAttribute('style') ?? '').replace(/\s+/g, '').toLowerCase();
+    if (style.includes('display:none') || style.includes('visibility:hidden') || e.hasAttribute('hidden')) return true;
+  }
+  return false;
+}
+
+/** Google visibly saying it has no overview: the placeholder, not hidden. */
+function placeholderShown(container: Element): boolean {
+  for (const el of Array.from(container.querySelectorAll('*'))) {
+    const own = Array.from(el.childNodes)
+      .filter((n) => n.nodeType === 3)
+      .map((n) => n.textContent ?? '')
+      .join('');
+    if (/An AI Overview is not available for this search/i.test(own) && !hiddenInMarkup(el)) return true;
+  }
+  return false;
+}
+
+/**
+ * The slot's own label, visible. English only: hl=en is what the captures use,
+ * and a Hindi label reads as "no label", which can only move a reply-shaped
+ * slot to ai_mode_reply — never an overview without an AI Mode marker.
+ */
+function overviewLabelShown(doc: Document): boolean {
+  return pickAll(doc, AI_OVERVIEW.label).some((el) => /^AI Overview$/i.test(text(el)) && !hiddenInMarkup(el));
+}
+
+/** The AI Mode reply component's own heading: "AI Mode reply for <query>" or "AI Mode replied:". */
+function aiModeMarker(container: Element): boolean {
+  return pickAll(container, AI_OVERVIEW.aiModeLabel).some((el) => /^AI Mode repl(y for|ied)\b/i.test(text(el)));
+}
+
 export function parseAIOverview(doc: Document, pageUrl: string): AIOverview {
   const container = bestContainer(doc);
   if (!container) return { present: false, sources: [] };
@@ -151,7 +195,31 @@ export function parseAIOverview(doc: Document, pageUrl: string): AIOverview {
    */
   const sources = citations(container, pageUrl);
   const substantive = body.replace(AIO_PLACEHOLDER, '').trim();
-  if (!sources.length && substantive.length < 40) return { present: false, sources: [] };
+  const refused = placeholderShown(container);
+  if (!sources.length && substantive.length < 40) {
+    return refused ? { present: false, status: 'unavailable', sources: [] } : { present: false, sources: [] };
+  }
+
+  /*
+   * An AI Mode reply in the slot is not an overview.
+   *
+   * Google renders both with the same AI Mode component, so its marker is in
+   * real overviews too: "AI Mode replied:" sits inside 69 of the 92 2026-09
+   * captures, every one under a visible "AI Overview" label. What separates a
+   * reply is the slot saying so — no label at all (9 of the 72 prokopi.in
+   * captures of 2026-10-15, each headed "AI Mode reply for <query>"), or the
+   * placeholder shown rather than hidden.
+   *
+   * The other 63 of those 72 read, as text, "An AI Overview is not available
+   * for this search … AI Mode replied: …", which is how they were first counted
+   * as replies. The placeholder there is the hidden one above, and the label is
+   * visible: rendered overviews, by the same measure that made this function
+   * stop counting the placeholder in a217940.
+   *
+   * Content without either marker stays an overview, so older markup and
+   * anything Google ships next keeps the meaning `present` had.
+   */
+  const status = aiModeMarker(container) && (refused || !overviewLabelShown(doc)) ? 'ai_mode_reply' : 'rendered';
 
   const bullets = pickAll(container, AI_OVERVIEW.bullets)
     .map((li) => text(li))
@@ -164,7 +232,8 @@ export function parseAIOverview(doc: Document, pageUrl: string): AIOverview {
     .slice(0, 20);
 
   return {
-    present: true,
+    present: status === 'rendered',
+    status,
     heading,
     text: body || undefined,
     headings: headings.length ? headings : undefined,

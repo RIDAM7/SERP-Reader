@@ -65,7 +65,7 @@ where you put it.
 | **Organic results** | Up to 25. Position, title, URL, domain, displayed URL, snippet, favicon, sitelinks |
 | **Ads** | Captured separately, never given an organic position |
 | **People Also Ask** | Question, answer if rendered, source URL and domain, order, whether it was expanded |
-| **AI Overview** | Heading, text, bullets, and **cited sources in order** |
+| **AI Overview** | Heading, text, bullets, and **cited sources in order**, and a `status` saying what filled the slot: `rendered`, `ai_mode_reply` or `unavailable` |
 | **Featured snippet** | Text and source |
 | **Related searches** | And "people also search for" |
 | **SERP features** | 17 detected: AI Overview, featured snippet, PAA, local pack, video, news, top stories, images, shopping, discussions, Twitter/X, Reddit, knowledge panel, related searches, people also search for, sitelinks, ads |
@@ -211,6 +211,14 @@ it can only come from a page a person opened.
 
 - **Selectors will break.** Google ships layout changes constantly. Diagnostics
   tell you when; `selectors.ts` is where you fix it.
+- **An AI Mode reply is not an AI Overview.** Google draws both with the same
+  component. `present` is true only for `status: "rendered"`; an AI Mode reply
+  in the slot keeps its text and sources under `status: "ai_mode_reply"` and
+  stays out of `ai_citations.csv`. A reply is recognised by the slot having no
+  "AI Overview" label, or by Google's "An AI Overview is not available" line
+  being shown. That line ships hidden (inline `display:none`) on nearly every
+  SERP, so as text it means nothing: 63 prokopi.in captures of 2026-10-15 read
+  as replies that way and were overviews.
 - **AI Overview must be visible.** If it is still streaming or collapsed behind
   "Show more", you get what is rendered. Nothing is guessed at.
 - **PAA answers are lazy.** Google ships questions and fetches answers on click.

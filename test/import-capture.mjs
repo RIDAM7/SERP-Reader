@@ -88,6 +88,7 @@ for (const s of serps) {
         firstDomains: parsed.organicResults.slice(0, 5).map((r) => r.domain),
         paaCount: parsed.paa.length,
         hasAiOverview: Boolean(parsed.aiOverview?.present),
+        aiStatus: parsed.aiOverview?.status ?? null,
         aiCitationDomains: (parsed.aiOverview?.sources ?? []).map((c) => c.domain),
         features: parsed.serpFeatures,
         adCount: parsed.ads.length,

@@ -72,6 +72,7 @@ function summarise(d: SerpData): SerpSummary {
     paaCount: d.paa.length,
     features: d.serpFeatures,
     hasAiOverview: Boolean(d.aiOverview?.present),
+    aiStatus: d.aiOverview?.status,
     googleDomain: d.metadata.googleDomain,
     country: d.metadata.country,
   };

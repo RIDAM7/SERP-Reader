@@ -42,6 +42,7 @@ function preview() {
     paa: d.paa.length,
     features: d.serpFeatures.length,
     aiOverview: Boolean(d.aiOverview?.present),
+    aiStatus: d.aiOverview?.status,
   };
 }
 
@@ -97,6 +98,7 @@ if (onSerp()) {
       const bits = [`${data.organicResults.length} organic`];
       if (data.paa.length) bits.push(`${data.paa.length} PAA`);
       if (data.aiOverview?.present) bits.push('AI Overview');
+      else if (data.aiOverview?.status === 'ai_mode_reply') bits.push('AI Mode reply');
       ui.setStatus(`Saved · ${bits.join(' · ')}`, 'ok');
     } catch (err) {
       ui.setStatus(err instanceof Error ? err.message : 'Collection failed', 'error');

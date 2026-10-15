@@ -3,7 +3,7 @@
   "url": "https://www.google.com/search?q=ecommerce%20seo&gl=in&hl=en&pws=0&num=20",
   "query": "ecommerce seo",
   "country": "in",
-  "parserVersion": "1.0.0",
+  "parserVersion": "1.1.0",
   "organicCount": 8,
   "firstDomains": [
     "developers.google.com",
@@ -14,6 +14,7 @@
   ],
   "paaCount": 4,
   "hasAiOverview": true,
+  "aiStatus": "rendered",
   "aiCitationDomains": [
     "geeksforgeeks.org",
     "coursera.org",

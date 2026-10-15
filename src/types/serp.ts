@@ -23,7 +23,9 @@ export type SerpFeature =
   | 'related_searches'
   | 'people_also_search_for'
   | 'sitelinks'
-  | 'ads';
+  | 'ads'
+  /** The AI Overview slot held an AI Mode reply instead of an overview. See AIOverviewStatus. */
+  | 'ai_mode_reply';
 
 export interface Sitelink {
   title: string;
@@ -83,8 +85,26 @@ export interface CitedSource {
   order: number;
 }
 
+/**
+ * What Google's AI Overview slot held.
+ *
+ *   rendered       an AI Overview. The only status where `present` is true.
+ *   ai_mode_reply  an AI Mode reply in the slot, and no overview: either the
+ *                  slot carries no visible "AI Overview" label, or Google
+ *                  visibly said an overview is not available. Its text and
+ *                  sources are kept, because they are what the searcher read.
+ *   unavailable    Google visibly said an overview is not available, and
+ *                  nothing else rendered.
+ *
+ * Absent when there was no slot, or an empty one: the same "no claim" the
+ * record made before statuses existed.
+ */
+export type AIOverviewStatus = 'rendered' | 'unavailable' | 'ai_mode_reply';
+
 export interface AIOverview {
+  /** True only when an overview rendered: `status === 'rendered'`. */
   present: boolean;
+  status?: AIOverviewStatus;
   heading?: string;
   text?: string;
   headings?: string[];
@@ -124,7 +144,7 @@ export interface Diagnostics {
   validOrganic: number;
   rejected: { reason: string; count: number }[];
   paaDetected: number;
-  aiOverview: 'detected' | 'not detected';
+  aiOverview: 'detected' | 'not detected' | 'ai mode reply' | 'unavailable';
   localPack: 'detected' | 'not detected';
   parserVersion: string;
   warnings: string[];
@@ -159,6 +179,7 @@ export interface SerpSummary {
   paaCount: number;
   features: SerpFeature[];
   hasAiOverview: boolean;
+  aiStatus?: AIOverviewStatus;
   googleDomain: string;
   country?: string;
 }

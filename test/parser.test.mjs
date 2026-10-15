@@ -13,7 +13,7 @@ import { parseHTML } from 'linkedom';
 
 import { collectSerp, isGoogleSerp, domainFromCite } from './.parser.mjs';
 import { aiCitationsCsv, organicCsv, paaCsv, serpsJson } from './.export.mjs';
-import { manyResults, serpHtml } from './fixtures.mjs';
+import { aiSlotBlock, manyResults, serpHtml } from './fixtures.mjs';
 
 const URL_US = 'https://www.google.com/search?q=generative+engine+optimization&gl=us&hl=en&pws=0&num=20';
 
@@ -444,10 +444,65 @@ test("Google's hidden placeholder is not mistaken for an overview", () => {
   // generate an overview".
   const html = serpHtml({ organic: manyResults(3) }).replace(
     '<div id="center_col">',
-    '<div id="center_col"><div data-subtree="aio">' +
+    '<div id="center_col"><div data-subtree="aio"><span class="YWpX0d" style="display:none">' +
       "An AI Overview is not available for this searchCan't generate an AI overview right now. Try again later." +
-      '</div>',
+      '</span></div>',
   );
   const d = collect(html);
   assert.equal(d.aiOverview, undefined, 'the placeholder alone was counted as an overview');
+});
+
+/* ------------------------------------------- what filled the AI Overview slot */
+
+/** A SERP whose AI slot is `aiSlotBlock(slot)`, above three organic results. */
+const withSlot = (slot) =>
+  serpHtml({ organic: manyResults(3) }).replace('<div id="center_col">', `<div id="center_col">${aiSlotBlock(slot)}`);
+
+test('an AI Mode reply in the slot is not an AI Overview, and is kept as what it is', () => {
+  // 9 of the 72 prokopi.in captures of 2026-10-15: no "AI Overview" label, an
+  // h3 reading "AI Mode reply for <query>". All 72 were stored present:true.
+  const d = collect(withSlot({ label: false, placeholder: null, aiMode: 'reply-for' }));
+  assert.equal(d.aiOverview?.status, 'ai_mode_reply');
+  assert.equal(d.aiOverview.present, false, 'a reply was counted as an overview');
+  assert.match(d.aiOverview.text, /An AI engineer builds/, 'the reply text is what the searcher read; keep it');
+  assert.deepEqual(d.aiOverview.sources.map((s) => s.domain), ['roadmap.sh', 'coursera.org']);
+  assert.ok(d.serpFeatures.includes('ai_mode_reply'));
+  assert.ok(!d.serpFeatures.includes('ai_overview'), 'serpFeatures and aiOverview disagree about one fact');
+  assert.equal(d.diagnostics.aiOverview, 'ai mode reply');
+  assert.equal(aiCitationsCsv([d]).trim().split('\r\n').length, 1, 'reply sources leaked into the AI Overview citations');
+});
+
+test('the hidden placeholder beside a visible label is a rendered overview', () => {
+  // The other 63 of those 72, and 90 of the 92 elivateseo.com captures: as text
+  // they read "An AI Overview is not available ... AI Mode replied: ...", and
+  // the placeholder is display:none. Counting the text again would undo a217940.
+  const d = collect(withSlot({ label: true, placeholder: 'hidden', aiMode: 'replied' }));
+  assert.equal(d.aiOverview?.status, 'rendered');
+  assert.equal(d.aiOverview.present, true);
+  assert.ok(d.serpFeatures.includes('ai_overview'));
+  assert.ok(!d.serpFeatures.includes('ai_mode_reply'));
+  assert.equal(d.diagnostics.aiOverview, 'detected');
+});
+
+test('Google visibly saying it has no overview, with a reply under it, is an AI Mode reply', () => {
+  const d = collect(withSlot({ label: true, placeholder: 'shown', aiMode: 'replied' }));
+  assert.equal(d.aiOverview?.status, 'ai_mode_reply');
+  assert.equal(d.aiOverview.present, false);
+});
+
+test('Google visibly saying it has no overview, and nothing else, is unavailable', () => {
+  const d = collect(withSlot({ label: true, placeholder: 'shown', body: false }));
+  assert.equal(d.aiOverview?.status, 'unavailable');
+  assert.equal(d.aiOverview.present, false);
+  assert.deepEqual(d.aiOverview.sources, []);
+  assert.ok(!d.serpFeatures.includes('ai_overview'));
+  assert.equal(d.diagnostics.aiOverview, 'unavailable');
+});
+
+test('content with no AI Mode marker stays an overview, whatever the label says', () => {
+  // Older markup, and whatever Google ships next: the status only moves an
+  // overview to a reply on positive evidence, never on a missing label alone.
+  const d = collect(withSlot({ label: false, placeholder: null, aiMode: null }));
+  assert.equal(d.aiOverview?.status, 'rendered');
+  assert.equal(d.aiOverview.present, true);
 });

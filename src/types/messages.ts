@@ -6,7 +6,7 @@
  * a mistyped `type` string fails silently — chrome.runtime just never calls
  * anyone back.
  */
-import type { SerpData, SerpSummary } from './serp';
+import type { AIOverviewStatus, SerpData, SerpSummary } from './serp';
 
 export type ContentRequest =
   | { type: 'PING' }
@@ -16,7 +16,7 @@ export type ContentRequest =
 export type ContentResponse =
   | { ok: true; type: 'PONG'; isSerp: boolean; query: string }
   | { ok: true; type: 'COLLECTED'; data: SerpData }
-  | { ok: true; type: 'PREVIEW'; isSerp: boolean; query: string; organic: number; paa: number; features: number; aiOverview: boolean }
+  | { ok: true; type: 'PREVIEW'; isSerp: boolean; query: string; organic: number; paa: number; features: number; aiOverview: boolean; aiStatus?: AIOverviewStatus }
   | { ok: false; error: string; code: 'NOT_SERP' | 'NO_RESULTS' | 'FAILED' };
 
 export type BackgroundRequest =
