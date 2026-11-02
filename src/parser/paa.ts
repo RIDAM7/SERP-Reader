@@ -1,10 +1,12 @@
 /**
  * People Also Ask.
  *
- * Answers are lazy: Google ships the questions in the DOM and fetches the
- * answer body only when one is opened. So a plain read returns questions with
- * no answers, which is the honest default — `expanded: false` says the answer
- * was never rendered rather than implying it was empty.
+ * Answers are mostly lazy: Google ships the questions in the DOM and fetches
+ * an answer body only when one is opened, though now and then the first
+ * question's answer arrives already rendered and collapsed. So a plain read
+ * returns questions with few or no answers, which is the honest default —
+ * `expanded: false` says the answer was never rendered rather than implying it
+ * was empty.
  *
  * `expandPAA` opens them one at a time, with a pause between each. That is a
  * deliberate speed limit, not an oversight: this is a reader driven by a person
@@ -12,8 +14,9 @@
  * something else.
  */
 import type { PAAItem } from '../types/serp';
+import { cardSources } from './aiOverview';
 import { PAA } from './selectors';
-import { cleanUrl, domainOf, isGoogleInternal, pick, pickAll, text, textFrom } from './utils';
+import { cleanUrl, closestAny, domainOf, isGoogleInternal, pick, pickAll, text, textFrom } from './utils';
 
 function questionOf(container: Element): string {
   const attr = container.getAttribute('data-q') ?? container.getAttribute('data-initq');
@@ -38,28 +41,85 @@ function looksLikeQuestion(q: string): boolean {
   return q.includes('?') || /^(how|what|why|when|where|who|which|is|are|can|does|do|should|will)\b/i.test(q);
 }
 
-function sourceOf(container: Element, pageUrl: string): { url?: string; domain?: string } {
-  for (const a of pickAll(container, PAA.sourceLink)) {
+/**
+ * The accordion toggle a container opens with.
+ *
+ * On today's layout the container IS the toggle: PAA.containers picks the
+ * elements carrying aria-expanded. The expand pass used to search inside it
+ * for a toggle, found none, and reached the toggle only through the question's
+ * pair, then a second time through the whole block, whose first toggle that
+ * second click closed again. Older layouts wrap the toggle, so a descendant is
+ * still looked for.
+ */
+function toggleOf(container: Element): HTMLElement | null {
+  if (container.hasAttribute('aria-expanded') || container.getAttribute('role') === 'button') {
+    return container as HTMLElement;
+  }
+  return pick(container, PAA.toggle) as HTMLElement | null;
+}
+
+/**
+ * Where a question's answer renders.
+ *
+ * Not inside the toggle, which holds the question alone. Google draws the
+ * answer in a sibling region, div.bCOlv, that the toggle names in
+ * aria-controls; before the answer loads it holds a spinner, a hidden "An
+ * error has occurred" line and three "Ask anything in AI Mode" chips, none of
+ * which PAA.answer matches. A toggle naming no region falls back to the
+ * question's own pair.
+ */
+function answerRegion(el: Element): Element {
+  for (const id of (el.getAttribute('aria-controls') ?? '').split(/\s+/).filter(Boolean)) {
+    const region = el.ownerDocument?.getElementById(id);
+    if (region) return region;
+  }
+  return closestAny(el, PAA.pair) ?? el;
+}
+
+/**
+ * The answer's source.
+ *
+ * An AI answer cites source cards, each a signed /goto, and the first card is
+ * read as the overview's are: its link, and its domain from the card's markup
+ * or the region's source record. A snippet answer has a direct link instead.
+ */
+function sourceOf(region: Element, pageUrl: string): { url?: string; domain?: string } {
+  const card = cardSources(region, pageUrl)[0];
+  if (card) return { url: card.url, domain: card.domain || undefined };
+  for (const a of pickAll(region, PAA.sourceLink)) {
     const url = cleanUrl(a.getAttribute('href'), pageUrl);
     if (url && !isGoogleInternal(url)) return { url, domain: domainOf(url) };
   }
   return {};
 }
 
+const answerOf = (el: Element): string => textFrom(answerRegion(el), PAA.answer);
+
 export function parsePAA(doc: Document, pageUrl: string): PAAItem[] {
   const containers = pickAll(doc, PAA.containers);
   const out: PAAItem[] = [];
   const seen = new Set<string>();
+  /*
+   * One toggle, one question. A container whose toggle is already read is the
+   * same question's pair, or the whole block, whose data-initq is the search
+   * itself: "how to get recommended by chatgpt" was recorded as one of its own
+   * PAA questions that way.
+   */
+  const read = new Set<Element>();
 
   for (const c of containers) {
+    const toggle = toggleOf(c);
+    if (toggle && read.has(toggle)) continue;
     const question = questionOf(c);
     if (!question || !looksLikeQuestion(question)) continue;
     const key = question.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
+    if (toggle) read.add(toggle);
 
-    const answer = textFrom(c, PAA.answer);
-    const { url, domain } = sourceOf(c, pageUrl);
+    const region = answerRegion(toggle ?? c);
+    const answer = textFrom(region, PAA.answer);
+    const { url, domain } = sourceOf(region, pageUrl);
 
     out.push({
       order: out.length + 1,
@@ -73,33 +133,63 @@ export function parsePAA(doc: Document, pageUrl: string): PAAItem[] {
   return out;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * The pause, then up to `timeoutMs` more for the answer to finish.
+ *
+ * An AI answer streams in after the click, so the first text to appear is not
+ * the answer yet. Finished means the text stopped growing across two polls.
+ */
+async function settle(toggle: Element, delayMs: number, timeoutMs: number): Promise<void> {
+  await sleep(delayMs);
+  const until = Date.now() + timeoutMs;
+  let last = -1;
+  let steady = 0;
+  while (Date.now() < until) {
+    const len = answerOf(toggle).length;
+    steady = len > 0 && len === last ? steady + 1 : 0;
+    if (steady >= 2) return;
+    last = len;
+    await sleep(250);
+  }
+}
+
 /**
  * Open each question, wait for its answer to render, and re-read.
  *
- * Optional and off by default. Returns the re-parsed list; on any failure it
- * returns what it has rather than throwing, because a partial expansion is
- * still more than none.
+ * Optional and off by default. Each toggle is clicked once, and never when it
+ * is open or its answer is already rendered, because a click there closes it.
+ * Google adds questions below the ones opened; those are read, not opened.
+ * Returns the re-parsed list; on any failure it returns what it has rather
+ * than throwing, because a partial expansion is still more than none.
  */
 export async function expandPAA(
   doc: Document,
   pageUrl: string,
-  opts: { delayMs?: number; max?: number } = {},
+  opts: { delayMs?: number; max?: number; timeoutMs?: number } = {},
 ): Promise<PAAItem[]> {
   const delay = opts.delayMs ?? 700;
   const max = opts.max ?? 10;
-  const containers = pickAll(doc, PAA.containers).slice(0, max);
+  const timeout = opts.timeoutMs ?? 5000;
 
-  for (const c of containers) {
-    const alreadyOpen = Boolean(textFrom(c, PAA.answer));
-    if (alreadyOpen) continue;
-    const toggle = pick(c, PAA.toggle) as HTMLElement | null;
-    if (!toggle) continue;
+  const toggles = new Set<HTMLElement>();
+  for (const c of pickAll(doc, PAA.containers)) {
+    const toggle = toggleOf(c);
+    if (toggle && looksLikeQuestion(questionOf(c))) toggles.add(toggle);
+  }
+
+  let clicked = 0;
+  for (const toggle of toggles) {
+    if (clicked >= max) break;
+    if (toggle.getAttribute('aria-expanded') === 'true' || answerOf(toggle)) continue;
     try {
       toggle.click();
     } catch {
       continue;
     }
-    await new Promise((r) => setTimeout(r, delay));
+    clicked++;
+    await settle(toggle, delay, timeout);
   }
 
   return parsePAA(doc, pageUrl);

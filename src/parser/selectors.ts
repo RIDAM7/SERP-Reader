@@ -12,7 +12,7 @@
  * validation in organic.ts is what stops the noisy fallbacks producing junk.
  */
 
-export const PARSER_VERSION = '1.3.0';
+export const PARSER_VERSION = '1.4.0';
 
 /**
  * Where to scan. First match wins.
@@ -120,10 +120,26 @@ export const PAA = {
     'div[jscontroller="ogmBcd"] div[data-q]',
   ],
   question: ['div[role="heading"]', 'span.CSkcDe', 'div.iDjcJe', 'div.JlqpRe', ':scope'],
-  answer: ['div.wDYxhc', 'div[data-attrid] span', 'div.hgKElc', 'div.LGOjhe'],
+  /*
+   * The snippet answers first, then the AI Mode component.
+   *
+   * Every answer in the stored captures is the second kind: 21 of the 539
+   * questions in the 191 captures to 2026-11-02 shipped with an answer already
+   * rendered, and all 21 were drawn by the AI Mode component, prose under
+   * "AI Mode replied:" in div[data-subtree="aimc"] and source cards beside it,
+   * with no wDYxhc or hgKElc anywhere. An unloaded answer's spinner sits in a
+   * div.YzCcne with no text, so it never reads as an answer.
+   */
+  answer: ['div.wDYxhc', 'div[data-attrid] span', 'div.hgKElc', 'div.LGOjhe', 'div[data-subtree="aimc"]', 'div.YzCcne'],
   sourceLink: ['a[href^="http"]', 'div.yuRUbf a', 'div.eKjLze a'],
-  /** Clickable element used by the optional expand pass. */
+  /** Clickable element used by the optional expand pass, inside a container that is not itself the toggle. */
   toggle: ['div[role="button"]', 'div[jsname="ibnC6b"]', 'div.related-question-pair > div'],
+  /**
+   * One question's own wrapper, where its answer renders when the toggle names
+   * no region. Never the whole block: div.cUnQKe carries data-initq, and that
+   * holds the search, not a question.
+   */
+  pair: ['div.related-question-pair', '[jsname="Cpkphb"]', 'div[data-q]'],
 };
 
 export const AI_OVERVIEW = {

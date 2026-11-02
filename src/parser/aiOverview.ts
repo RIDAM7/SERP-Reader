@@ -108,9 +108,10 @@ function bestContainer(doc: Document): Element | null {
  * shape: a signed /goto, the origin in a favicon request, a site name. The
  * slot holds one card list. The second h7wxwc list that 16 of the 90 2026-09
  * captures carry is inside People Also Ask, an expanded answer's own sources,
- * and bestContainer never picks a wrapper there.
+ * and bestContainer never picks a wrapper there. paa.ts reads those with this
+ * same function, from the answer's own region.
  */
-function cardSources(container: Element, pageUrl: string): CitedSource[] {
+export function cardSources(container: Element, pageUrl: string): CitedSource[] {
   const out: CitedSource[] = [];
   const seen = new Set<string>();
   let slotHtml: string | null = null;

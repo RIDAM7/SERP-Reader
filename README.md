@@ -265,7 +265,13 @@ it can only come from a page a person opened.
   "Show more", you get what is rendered. Nothing is guessed at.
 - **PAA answers are lazy.** Google ships questions and fetches answers on click.
   Without "Expand PAA" you get questions with `expanded: false` — which says the
-  answer was never rendered, not that it was empty.
+  answer was never rendered, not that it was empty. The answer renders beside
+  the question, in the region its toggle names in `aria-controls`, and today it
+  is an AI Mode answer whose source is its first source card (parser 1.4.0;
+  before that no answer was read, and 21 already-rendered ones in the stored
+  captures were missed). Only the popup's Collect runs the expand pass; the
+  on-page button never does. Opening questions makes Google add more below
+  them, so an expanded capture holds more questions than a plain one.
 - **`num=20` is a request, not a promise.** Google frequently returns fewer.
 - **Position is what was rendered for you**, at your location, at that moment.
   It is a capture, not a rank tracker.

@@ -106,7 +106,9 @@ els.collect.addEventListener('click', async () => {
 
     const d = res.data;
     const parts = [`${d.organicResults.length} organic`];
-    if (d.paa.length) parts.push(`${d.paa.length} PAA`);
+    // How many answers were read, so an expand pass that opened nothing shows here and not only in the export.
+    const answered = d.paa.filter((p) => p.expanded).length;
+    if (d.paa.length) parts.push(answered ? `${d.paa.length} PAA (${answered} answered)` : `${d.paa.length} PAA`);
     if (d.serpFeatures.length) parts.push(`${d.serpFeatures.length} features`);
     if (d.aiOverview?.present) parts.push('AI Overview');
     else if (d.aiOverview?.status === 'ai_mode_reply') parts.push('AI Mode reply');
