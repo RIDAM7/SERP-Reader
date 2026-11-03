@@ -577,3 +577,30 @@ test('a slot without source cards still reads its domain chips', () => {
   assert.deepEqual(d.aiOverview.sources.map((c) => c.domain), ['roadmap.sh', 'coursera.org']);
   assert.ok(d.aiOverview.sources.every((c) => c.siteName === undefined));
 });
+
+/* ------------------------------------------------------------ the snapshot */
+
+// A page whose results column is this many bytes, as opened PAA answers make it.
+const pageOf = (bytes) =>
+  serpHtml({ organic: manyResults(8), related: ['geo vs seo'] }).replace(
+    '<div id="rso">',
+    `<div id="rso"><div class="opened-answers">${'x'.repeat(bytes)}</div>`,
+  );
+
+test('a 3 MB results column, as opened PAA answers make it, is kept whole', () => {
+  // On the 2026-11-03 dental queue every page whose PAA was opened passed the old 1.5 MB ceiling.
+  const d = collectSerp(parse(pageOf(3_000_000)), URL_US, { includeRawHtml: true });
+  assert.ok(d.rawHtml.length > 3_000_000);
+  assert.doesNotMatch(d.rawHtml, /<!-- truncated at \d+ bytes -->$/);
+  assert.match(d.rawHtml, /geo vs seo/, 'the end of the column, related searches, is in the snapshot');
+  assert.ok(!d.diagnostics.warnings.some((w) => w.startsWith('snapshot cut')));
+});
+
+test('a snapshot over the ceiling is cut, says so, and ends with the marker a re-read looks for', () => {
+  const d = collectSerp(parse(pageOf(50_000)), URL_US, { includeRawHtml: true, maxRawHtmlBytes: 20_000 });
+  assert.match(d.rawHtml, /<!-- truncated at 20000 bytes -->$/);
+  assert.ok(d.diagnostics.warnings.some((w) => /^snapshot cut at 20000 of \d+ bytes/.test(w)));
+  // The readings are the live page's, whole; only the snapshot is short.
+  assert.equal(d.organicResults.length, 8);
+  assert.deepEqual(d.relatedSearches, ['geo vs seo']);
+});

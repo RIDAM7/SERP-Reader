@@ -90,7 +90,7 @@ itself, so reloading it, or visiting the same search later, does not.
 | **Related searches** | And "people also search for" |
 | **SERP features** | 17 detected: AI Overview, featured snippet, PAA, local pack, video, news, top stories, images, shopping, discussions, Twitter/X, Reddit, knowledge panel, related searches, people also search for, sitelinks, ads |
 | **Metadata** | Query, Google domain, `gl`, `hl`, `uule`, `num`, `pws`, device, timestamp, counts |
-| **Raw HTML** | A trimmed snapshot of the results column, so a future parser can re-read this capture |
+| **Raw HTML** | A trimmed snapshot of the results column, so a future parser can re-read this capture. Up to 10 MB (1.5 MB before parser 1.4.1, which pages with opened PAA answers passed); a longer one is cut, ends with a `<!-- truncated at N bytes -->` marker, and the capture's warnings and the panel say so |
 
 **AI Overview citations are the point** for GEO work. "Which domains does Google
 quote when answering this" is not available from any keyword tool, and it
@@ -126,7 +126,9 @@ npm run reparse -- path/to/serps-2026-10-15.json    # writes serps-2026-10-15.re
 ```
 
 Every capture with a snapshot is read again by today's parser; one without is
-copied as it was and counted. A re-read keeps the capture's `id`,
+copied as it was and counted, and so is one whose snapshot was cut, because
+reading the first part of a page again would replace what the live page gave
+with less of it. A re-read keeps the capture's `id`,
 `collectedAt` and `metadata` (the language and device came from the live page,
 which a snapshot of the results column cannot say again), takes the counts,
 features and everything else from the re-read, and carries

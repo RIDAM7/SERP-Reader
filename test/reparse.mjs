@@ -6,8 +6,9 @@
  * Writes serps-2026-10-15.reparsed.json beside each: the same envelope, every
  * capture with a snapshot read again by today's collectSerp, so a SERP from
  * last month benefits from a selector fixed today without being searched again.
- * Captures without a snapshot are copied unchanged and counted. Prints what
- * moved per capture.
+ * Captures without a snapshot are copied unchanged and counted, and so are
+ * captures whose snapshot was cut at the size ceiling (CUT, below), less the
+ * snapshot. Prints what moved per capture.
  *
  * The original is never written. Snapshots are the only thing in an export
  * that cannot be regenerated, and the .reparsed.json can be, by running this
@@ -66,9 +67,16 @@ export function moved(before, after) {
   if (diff.length) out.push(`features ${diff.join(' ')}`);
   if (!same(before.featuredSnippet?.sourceDomain, after.featuredSnippet?.sourceDomain)) out.push('featured snippet');
   if (!same(before.relatedSearches, after.relatedSearches)) out.push('related searches');
-  if (/<!-- truncated at \d+ bytes -->$/.test(before.rawHtml ?? '')) out.push('snapshot truncated');
   return out;
 }
+
+/**
+ * A snapshot cut at the size ceiling (parser index.ts) ends with this marker.
+ * Re-reading one would swap the live page's readings for those of its first
+ * part: "dentist columbus oh" (2026-11-03) re-read from its 1.5 MB cut keeps 1
+ * of 8 organic results. Such a capture is kept as captured instead.
+ */
+const CUT = /<!-- truncated at \d+ bytes -->$/;
 
 /**
  * One export's envelope, re-read. Pure: no files. Returns the new envelope and
@@ -81,17 +89,24 @@ export function reparseExport(payload, { snapshotIn } = {}) {
   const versions = new Set();
   let reread = 0;
   let kept = 0;
+  let cut = 0;
 
   const out = serps.map((s) => {
     if (!s.rawHtml) {
       kept++;
       return s;
     }
+    const label = (s.metadata?.query || '(no query)').slice(0, 60);
+    if (CUT.test(s.rawHtml)) {
+      cut++;
+      lines.push(`  ${label.padEnd(60)} snapshot cut; kept as captured`);
+      const { rawHtml, ...captured } = s;
+      return { ...captured, ...(snapshotIn ? { snapshotIn } : {}) };
+    }
     versions.add(s.diagnostics?.parserVersion ?? '?');
     const d = collectSerp(parseHTML(s.rawHtml).document, s.metadata?.url ?? 'https://www.google.com/search', {
       includeRawHtml: false,
     });
-    const label = (s.metadata?.query || '(no query)').slice(0, 60);
     const m = moved(s, d);
     lines.push(`  ${label.padEnd(60)} ${m.length ? m.join(', ') : 'unchanged'}`);
     reread++;
@@ -114,7 +129,7 @@ export function reparseExport(payload, { snapshotIn } = {}) {
     count: out.length,
     serps: out,
   };
-  return { envelope, lines, reread, kept, from: [...versions].sort() };
+  return { envelope, lines, reread, kept, cut, from: [...versions].sort() };
 }
 
 /** Re-read one export file into its .reparsed.json. Returns the path written, or null when skipped. */
@@ -133,7 +148,8 @@ export function reparseFile(input, { log = console.log } = {}) {
   for (const line of r.lines) log(line);
   writeFileSync(target, JSON.stringify(r.envelope, null, 2));
   const from = r.from.length ? `parser ${r.from.join(', ')} -> ${PARSER_VERSION}` : `parser ${PARSER_VERSION}`;
-  log(`${r.reread} re-read, ${r.kept} without a snapshot kept as they were (${from}) -> ${target}\n`);
+  const cut = r.cut ? `, ${r.cut} with a cut snapshot kept as captured` : '';
+  log(`${r.reread} re-read, ${r.kept} without a snapshot kept as they were${cut} (${from}) -> ${target}\n`);
   return target;
 }
 

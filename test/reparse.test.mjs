@@ -132,3 +132,22 @@ test('re-read: a bare array of captures gets the envelope', () => {
   assert.equal(envelope.count, 2);
   assert.equal(envelope.serps[0].id, 'capture-1');
 });
+
+test('re-read: a capture whose snapshot was cut is kept as captured, less the snapshot', () => {
+  // "dentist columbus oh" (2026-11-03): re-read from its 1.5 MB cut, 8 organic results became 1.
+  const capture = {
+    id: 'capture-cut',
+    collectedAt: '2026-11-03T04:09:26.000Z',
+    metadata: { query: 'dentist columbus oh', url: 'https://www.google.com/search?q=dentist%20columbus%20oh&gl=us&hl=en&pws=0&num=20' },
+    organicResults: Array.from({ length: 8 }, (_, i) => ({ position: i + 1, domain: `site${i + 1}.example.com` })),
+    paa: [{ order: 1, question: 'Is there a free dental clinic in Columbus, Ohio?', expanded: true }],
+    relatedSearches: ['dentist near me'],
+    diagnostics: { parserVersion: '1.4.0', warnings: [] },
+    rawHtml: `${readFileSync(`${FIXTURE}.html`, 'utf8').slice(0, 20_000)}<!-- truncated at 20000 bytes -->`,
+  };
+  const { envelope, lines, reread, kept, cut } = reparseExport({ serps: [capture] }, { snapshotIn: 'serps-2026-11-03.json' });
+  const { rawHtml, ...captured } = capture;
+  assert.deepEqual(envelope.serps[0], { ...captured, snapshotIn: 'serps-2026-11-03.json' });
+  assert.deepEqual([reread, kept, cut], [0, 0, 1]);
+  assert.match(lines[0], /^ {2}dentist columbus oh +snapshot cut; kept as captured$/);
+});

@@ -48,6 +48,8 @@ function summary(d: SerpData): string {
   if (d.paa.length) bits.push(answered ? `${d.paa.length} PAA (${answered} answered)` : `${d.paa.length} PAA`);
   if (d.aiOverview?.present) bits.push('AI Overview');
   else if (d.aiOverview?.status === 'ai_mode_reply') bits.push('AI Mode reply');
+  // Said here, because a queue run never opens the popup's diagnostics.
+  if (d.diagnostics.warnings.some((w) => w.startsWith('snapshot cut'))) bits.push('snapshot cut');
   return `Saved · ${bits.join(' · ')}`;
 }
 

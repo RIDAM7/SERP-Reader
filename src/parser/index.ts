@@ -37,13 +37,24 @@ function safely<T>(label: string, warnings: string[], fn: () => T, fallback: T):
  * A whole Google page is megabytes of inlined script and style that no future
  * parser will read. The results column is the part worth keeping, and keeping
  * it small is what makes storing hundreds of captures reasonable.
+ *
+ * The ceiling is 10 MB; it was 1.5 MB until parser 1.4.1. An opened PAA answer
+ * is 180 to 425 KB of markup, and on the 2026-11-03 dental queue every page
+ * whose PAA was opened (7 of 25) passed 1.5 MB and lost its end. Re-read,
+ * "dentist columbus oh" kept 1 of its 8 organic results and none of its 16
+ * related searches. A cut snapshot says so in the warnings, and the marker it
+ * ends with is how a re-read knows not to trust it.
  */
-function snapshot(doc: Document, maxBytes: number): string | undefined {
+const MAX_SNAPSHOT_BYTES = 10_000_000;
+
+function snapshot(doc: Document, maxBytes: number, warnings: string[]): string | undefined {
   const root = pick(doc, SNAPSHOT_ROOTS) ?? doc.body;
   if (!root) return undefined;
   const html = (root as HTMLElement).outerHTML ?? '';
   if (!html) return undefined;
-  return html.length > maxBytes ? `${html.slice(0, maxBytes)}<!-- truncated at ${maxBytes} bytes -->` : html;
+  if (html.length <= maxBytes) return html;
+  warnings.push(`snapshot cut at ${maxBytes} of ${html.length} bytes: a re-read of this capture misses the end of the page`);
+  return `${html.slice(0, maxBytes)}<!-- truncated at ${maxBytes} bytes -->`;
 }
 
 export function collectSerp(doc: Document, pageUrl: string, opts: CollectOptions = {}): SerpData {
@@ -92,7 +103,7 @@ export function collectSerp(doc: Document, pageUrl: string, opts: CollectOptions
   });
 
   const rawHtml = opts.includeRawHtml
-    ? safely('snapshot', warnings, () => snapshot(doc, opts.maxRawHtmlBytes ?? 1_500_000), undefined)
+    ? safely('snapshot', warnings, () => snapshot(doc, opts.maxRawHtmlBytes ?? MAX_SNAPSHOT_BYTES, warnings), undefined)
     : undefined;
 
   return {
