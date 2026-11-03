@@ -81,3 +81,25 @@ test('a queued capture waits for the results column to go quiet, and no longer t
   const cost = Date.now() - capped;
   assert.ok(cost >= 750 && cost < 3000, `a page that never went quiet cost ${cost} ms against an 800 ms cap`);
 });
+
+test('quiet is not finished while the overview slot says "Thinking"', async () => {
+  // Google's column holds still while it thinks a little longer; three queue captures were taken in that pause.
+  const { document, MutationObserver } = parseHTML(
+    '<html><body><div id="rcnt"><div class="YzCcne"><span class="YOgmme">Thinking a little longer</span></div></div></body></html>',
+  );
+  globalThis.MutationObserver = MutationObserver;
+  const line = document.querySelector('span.YOgmme');
+  setTimeout(() => line.remove(), 1200);
+  const start = Date.now();
+  await pageSettled(document, { minMs: 200, quietMs: 400, maxMs: 5000, writingMaxMs: 8000 });
+  const waited = Date.now() - start;
+  assert.ok(waited >= 1200, `returned after ${waited} ms, while "Thinking" still showed`);
+  assert.ok(waited < 5000, `returned after ${waited} ms, long after the overview finished`);
+
+  // An overview that never finishes costs the writing cap, then the capture records it as unfinished.
+  document.querySelector('div.YzCcne').innerHTML = '<span>Thinking</span>';
+  const capped = Date.now();
+  await pageSettled(document, { minMs: 100, quietMs: 200, maxMs: 300, writingMaxMs: 900 });
+  const cost = Date.now() - capped;
+  assert.ok(cost >= 850 && cost < 3500, `a slot that never finished cost ${cost} ms against a 900 ms cap`);
+});

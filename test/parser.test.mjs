@@ -9,6 +9,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { parseHTML } from 'linkedom';
 
 import { collectSerp, isGoogleSerp, domainFromCite } from './.parser.mjs';
@@ -603,4 +604,29 @@ test('a snapshot over the ceiling is cut, says so, and ends with the marker a re
   // The readings are the live page's, whole; only the snapshot is short.
   assert.equal(d.organicResults.length, 8);
   assert.deepEqual(d.relatedSearches, ['geo vs seo']);
+});
+
+/* ------------------------------------------- an overview Google is still writing */
+
+test('an overview captured while Google was still writing it is neither an overview nor a reply', () => {
+  // Real markup: the queue took "dentist charlotte nc" mid-"Thinking a little longer" (2026-11-03).
+  const html = readFileSync('test/fixtures/aio-writing-2026-11-03-charlotte.html', 'utf8');
+  const d = collect(html, 'https://www.google.com/search?q=dentist%20charlotte%20nc&gl=us&hl=en&pws=0&num=20');
+  assert.equal(d.aiOverview.status, 'writing', 'read as an AI Mode reply before 1.4.2');
+  assert.equal(d.aiOverview.present, false);
+  assert.ok(!d.serpFeatures.includes('ai_overview') && !d.serpFeatures.includes('ai_mode_reply'));
+  assert.equal(d.diagnostics.aiOverview, 'still writing');
+  assert.ok(d.diagnostics.warnings.some((w) => /^AI Overview still being written/.test(w)));
+});
+
+test('a status line that is hidden, or in People Also Ask, does not make a finished overview unfinished', () => {
+  const hiddenLine = withSlot({}).replace('<div class="YzCcne">', '<div class="YzCcne"><span style="display:none">Thinking</span>');
+  assert.equal(collect(hiddenLine).aiOverview.status, 'rendered');
+
+  // An opened PAA answer says "Thinking" while it loads; that is the answer's, not the overview's.
+  const paaThinking = withSlot({}).replace(
+    '<div id="rso">',
+    '<div id="rso"><div class="related-question-pair" data-q="What is GEO?"><div class="YzCcne"><span>Thinking</span></div></div>',
+  );
+  assert.equal(collect(paaThinking).aiOverview.status, 'rendered');
 });

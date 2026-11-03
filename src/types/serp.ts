@@ -102,11 +102,15 @@ export interface CitedSource {
  *                  sources are kept, because they are what the searcher read.
  *   unavailable    Google visibly said an overview is not available, and
  *                  nothing else rendered.
+ *   writing        Google was still writing it: its "Thinking" or "Searching"
+ *                  line was showing. Neither an overview nor a reply yet, so
+ *                  the capture says nothing about which it became; whatever
+ *                  had arrived is kept. Capture the search again.
  *
  * Absent when there was no slot, or an empty one: the same "no claim" the
  * record made before statuses existed.
  */
-export type AIOverviewStatus = 'rendered' | 'unavailable' | 'ai_mode_reply';
+export type AIOverviewStatus = 'rendered' | 'unavailable' | 'ai_mode_reply' | 'writing';
 
 export interface AIOverview {
   /** True only when an overview rendered: `status === 'rendered'`. */
@@ -151,7 +155,7 @@ export interface Diagnostics {
   validOrganic: number;
   rejected: { reason: string; count: number }[];
   paaDetected: number;
-  aiOverview: 'detected' | 'not detected' | 'ai mode reply' | 'unavailable';
+  aiOverview: 'detected' | 'not detected' | 'ai mode reply' | 'unavailable' | 'still writing';
   localPack: 'detected' | 'not detected';
   parserVersion: string;
   warnings: string[];

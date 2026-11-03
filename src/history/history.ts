@@ -79,10 +79,10 @@ function render() {
     const feats = document.createElement('td');
     const chips = document.createElement('div');
     chips.className = 'chips';
-    if (s.hasAiOverview || s.aiStatus === 'ai_mode_reply') {
+    if (s.hasAiOverview || s.aiStatus === 'ai_mode_reply' || s.aiStatus === 'writing') {
       const c = document.createElement('span');
       c.className = 'chip aio';
-      c.textContent = s.hasAiOverview ? 'AI Overview' : 'AI Mode reply';
+      c.textContent = s.hasAiOverview ? 'AI Overview' : s.aiStatus === 'writing' ? 'Overview still loading' : 'AI Mode reply';
       chips.append(c);
     }
     for (const f of s.features.filter((x) => x !== 'ai_overview' && x !== 'ai_mode_reply').slice(0, 5)) {

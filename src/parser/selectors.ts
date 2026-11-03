@@ -12,7 +12,7 @@
  * validation in organic.ts is what stops the noisy fallbacks producing junk.
  */
 
-export const PARSER_VERSION = '1.4.1';
+export const PARSER_VERSION = '1.4.2';
 
 /**
  * Where to scan. First match wins.

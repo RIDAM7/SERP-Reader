@@ -48,6 +48,7 @@ function summary(d: SerpData): string {
   if (d.paa.length) bits.push(answered ? `${d.paa.length} PAA (${answered} answered)` : `${d.paa.length} PAA`);
   if (d.aiOverview?.present) bits.push('AI Overview');
   else if (d.aiOverview?.status === 'ai_mode_reply') bits.push('AI Mode reply');
+  else if (d.aiOverview?.status === 'writing') bits.push('overview still loading');
   // Said here, because a queue run never opens the popup's diagnostics.
   if (d.diagnostics.warnings.some((w) => w.startsWith('snapshot cut'))) bits.push('snapshot cut');
   return `Saved · ${bits.join(' · ')}`;
@@ -137,6 +138,11 @@ async function captureQueued(ui: FloatingUI): Promise<void> {
     await pageSettled(document);
     const data = await capture(ui);
     if (!data) await updateItem(pending.url, { status: 'failed', note: 'no organic results', at: new Date().toISOString() });
+    else if (data.aiOverview?.status === 'writing') {
+      // Saved, but Google never finished the overview in 30 s: failed, so Retry failed takes it again.
+      await updateItem(pending.url, { status: 'failed', note: 'AI Overview still loading', serpId: data.id, at: data.collectedAt });
+      ui.setStatus(`${summary(data)} · marked failed, retry it`, 'error');
+    }
   } catch (err) {
     const note = err instanceof Error ? err.message : String(err);
     await updateItem(pending.url, { status: 'failed', note, at: new Date().toISOString() });

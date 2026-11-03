@@ -212,14 +212,42 @@ function hiddenInMarkup(el: Element): boolean {
   return false;
 }
 
+/** An element's own text, not its children's. */
+const ownText = (el: Element): string =>
+  Array.from(el.childNodes)
+    .filter((n) => n.nodeType === 3)
+    .map((n) => n.textContent ?? '')
+    .join('');
+
 /** Google visibly saying it has no overview: the placeholder, not hidden. */
 function placeholderShown(container: Element): boolean {
   for (const el of Array.from(container.querySelectorAll('*'))) {
-    const own = Array.from(el.childNodes)
-      .filter((n) => n.nodeType === 3)
-      .map((n) => n.textContent ?? '')
-      .join('');
-    if (/An AI Overview is not available for this search/i.test(own) && !hiddenInMarkup(el)) return true;
+    if (/An AI Overview is not available for this search/i.test(ownText(el)) && !hiddenInMarkup(el)) return true;
+  }
+  return false;
+}
+
+/**
+ * Google's status lines while it writes an overview: "Thinking", "Searching",
+ * "Thinking a little longer". They show until the answer lands and are then
+ * gone from the markup; no finished overview in the stored captures keeps one.
+ *
+ * Measured 2026-11-03, where the queue captured three searches with them still
+ * showing: "dentist charlotte nc" and "dentist newark nj", read as AI Mode
+ * replies with no text because the "AI Overview" label was still hidden, and
+ * "dentist new orleans la", read as no overview at all. The same searches had
+ * full overviews 40 minutes apart. Manual captures never caught one: a person
+ * waits for the answer before pressing Collect.
+ */
+const WRITING = /^(Thinking|Searching|Thinking a little longer)$/i;
+
+/** Is the overview slot still being written? A visible status line in it, never one in People Also Ask. */
+export function overviewWriting(doc: Document): boolean {
+  for (const c of pickAll(doc, AI_OVERVIEW.containers)) {
+    if (closestAny(c, AI_OVERVIEW.notInside)) continue;
+    for (const el of Array.from(c.querySelectorAll('span, div'))) {
+      if (WRITING.test(ownText(el).trim()) && !hiddenInMarkup(el) && !closestAny(el, AI_OVERVIEW.notInside)) return true;
+    }
   }
   return false;
 }
@@ -239,8 +267,9 @@ function aiModeMarker(container: Element): boolean {
 }
 
 export function parseAIOverview(doc: Document, pageUrl: string): AIOverview {
+  const writing = overviewWriting(doc);
   const container = bestContainer(doc);
-  if (!container) return { present: false, sources: [] };
+  if (!container) return writing ? { present: false, status: 'writing', sources: [] } : { present: false, sources: [] };
 
   const heading = textFrom(container, AI_OVERVIEW.heading) || undefined;
   const body = text(container);
@@ -260,6 +289,8 @@ export function parseAIOverview(doc: Document, pageUrl: string): AIOverview {
    */
   const cards = cardSources(container, pageUrl);
   const sources = cards.length ? cards : citations(container, pageUrl);
+  // Unfinished: not yet an overview or a reply, whatever the label and marker say so far.
+  if (writing) return { present: false, status: 'writing', heading, text: body || undefined, sources };
   const substantive = body.replace(AIO_PLACEHOLDER, '').trim();
   const refused = placeholderShown(container);
   if (!sources.length && substantive.length < 40) {

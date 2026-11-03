@@ -92,7 +92,13 @@ async function refresh() {
     els.organic.textContent = String(res.organic);
     els.paa.textContent = String(res.paa);
     els.features.textContent = String(res.features);
-    els.aio.textContent = res.aiOverview ? '✓' : res.aiStatus === 'ai_mode_reply' ? 'AI Mode reply' : '–';
+    els.aio.textContent = res.aiOverview
+      ? '✓'
+      : res.aiStatus === 'ai_mode_reply'
+        ? 'AI Mode reply'
+        : res.aiStatus === 'writing'
+          ? 'still loading'
+          : '–';
     els.collect.disabled = false;
   } catch (err) {
     els.context.textContent = err instanceof Error ? err.message : String(err);
@@ -123,7 +129,8 @@ els.collect.addEventListener('click', async () => {
     if (d.serpFeatures.length) parts.push(`${d.serpFeatures.length} features`);
     if (d.aiOverview?.present) parts.push('AI Overview');
     else if (d.aiOverview?.status === 'ai_mode_reply') parts.push('AI Mode reply');
-    say(`Saved · ${parts.join(' · ')}`, 'ok');
+    else if (d.aiOverview?.status === 'writing') parts.push('overview still loading, collect again');
+    say(`Saved · ${parts.join(' · ')}`, d.aiOverview?.status === 'writing' ? 'error' : 'ok');
 
     const g = d.diagnostics;
     els.diag.textContent = [

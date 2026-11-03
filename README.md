@@ -66,13 +66,16 @@ For a batch, load the list once and press one button per search:
    which is searched as `…/search?q=KEYWORD&gl=us&hl=en&pws=0&num=20`.
 2. **Open next search** in the popup, or **Next** on the floating panel.
 3. The page that opens captures itself: it waits for the results column to
-   stop changing (an AI Overview streams in after load), opens the People Also
+   stop changing (an AI Overview streams in after load) and for Google's
+   "Thinking" line in the overview to go (up to 30 s), opens the People Also
    Ask questions one at a time if "Expand PAA" is on, and saves. The panel says
    what it is doing, then shows the next search.
 4. Press **Next** again. Nothing opens until you do.
 
-A search that finds no organic results is marked failed; **Retry failed** puts
-failed and skipped ones back. Collecting a queued search by hand ticks it off
+A search that finds no organic results is marked failed, and so is one whose
+overview Google had not finished after 30 s (saved with the status `writing`,
+"overview still loading" on the panel); **Retry failed** puts failed and
+skipped ones back. Collecting a queued search by hand ticks it off
 too. Only a page opened from the queue in the last three minutes captures
 itself, so reloading it, or visiting the same search later, does not.
 
@@ -85,7 +88,7 @@ itself, so reloading it, or visiting the same search later, does not.
 | **Organic results** | Up to 25. Position, title, URL, domain, displayed URL, snippet, favicon, sitelinks |
 | **Ads** | Captured separately, never given an organic position |
 | **People Also Ask** | Question, answer if rendered, source URL and domain, order, whether it was expanded |
-| **AI Overview** | Heading, text, bullets, and **cited sources in order** (one per source card, with its domain and the site name it shows), and a `status` saying what filled the slot: `rendered`, `ai_mode_reply` or `unavailable` |
+| **AI Overview** | Heading, text, bullets, and **cited sources in order** (one per source card, with its domain and the site name it shows), and a `status` saying what filled the slot: `rendered`, `ai_mode_reply`, `unavailable`, or `writing` when Google was still writing it (parser 1.4.2; capture that search again) |
 | **Featured snippet** | Text and source |
 | **Related searches** | And "people also search for" |
 | **SERP features** | 17 detected: AI Overview, featured snippet, PAA, local pack, video, news, top stories, images, shopping, discussions, Twitter/X, Reddit, knowledge panel, related searches, people also search for, sitelinks, ads |

@@ -75,6 +75,9 @@ export function collectSerp(doc: Document, pageUrl: string, opts: CollectOptions
     present: false,
     sources: [],
   });
+  if (aiOverview.status === 'writing') {
+    warnings.push('AI Overview still being written when captured: capture this search again');
+  }
   const featuredSnippet = safely('featuredSnippet', warnings, () => parseFeaturedSnippet(doc, pageUrl), {
     present: false,
   });
@@ -130,7 +133,9 @@ export function collectSerp(doc: Document, pageUrl: string, opts: CollectOptions
           ? 'ai mode reply'
           : aiOverview.status === 'unavailable'
             ? 'unavailable'
-            : 'not detected',
+            : aiOverview.status === 'writing'
+              ? 'still writing'
+              : 'not detected',
       localPack: serpFeatures.includes('local_pack') ? 'detected' : 'not detected',
       parserVersion: PARSER_VERSION,
       warnings,
