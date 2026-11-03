@@ -2,3 +2,4 @@ node_modules/
 dist/
 test/.parser.mjs
 test/.export.mjs
+test/.queue/

@@ -158,8 +158,9 @@ async function settle(toggle: Element, delayMs: number, timeoutMs: number): Prom
 /**
  * Open each question, wait for its answer to render, and re-read.
  *
- * Optional and off by default. Each toggle is clicked once, and never when it
- * is open or its answer is already rendered, because a click there closes it.
+ * Optional. Each toggle is clicked once, and never when it is open or its
+ * answer is already rendered, because a click there closes it. Each is
+ * scrolled into view first, so the person watching sees which one is opening.
  * Google adds questions below the ones opened; those are read, not opened.
  * Returns the re-parsed list; on any failure it returns what it has rather
  * than throwing, because a partial expansion is still more than none.
@@ -167,7 +168,7 @@ async function settle(toggle: Element, delayMs: number, timeoutMs: number): Prom
 export async function expandPAA(
   doc: Document,
   pageUrl: string,
-  opts: { delayMs?: number; max?: number; timeoutMs?: number } = {},
+  opts: { delayMs?: number; max?: number; timeoutMs?: number; onProgress?: (n: number, of: number) => void } = {},
 ): Promise<PAAItem[]> {
   const delay = opts.delayMs ?? 700;
   const max = opts.max ?? 10;
@@ -178,17 +179,18 @@ export async function expandPAA(
     const toggle = toggleOf(c);
     if (toggle && looksLikeQuestion(questionOf(c))) toggles.add(toggle);
   }
+  const closed = (t: HTMLElement) => t.getAttribute('aria-expanded') !== 'true' && !answerOf(t);
+  const todo = [...toggles].filter(closed).slice(0, max);
 
-  let clicked = 0;
-  for (const toggle of toggles) {
-    if (clicked >= max) break;
-    if (toggle.getAttribute('aria-expanded') === 'true' || answerOf(toggle)) continue;
+  for (const [i, toggle] of todo.entries()) {
+    if (!closed(toggle)) continue;
+    opts.onProgress?.(i + 1, todo.length);
     try {
+      toggle.scrollIntoView?.({ block: 'center' });
       toggle.click();
     } catch {
       continue;
     }
-    clicked++;
     await settle(toggle, delay, timeout);
   }
 

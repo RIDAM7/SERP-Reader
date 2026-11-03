@@ -39,6 +39,14 @@
       }
       .row { display: flex; gap: 8px; }
       .row button { margin-top: 8px; }
+      h2 { margin: 0 0 4px; font-size: 13px; }
+      textarea {
+        width: 100%; margin-top: 8px; padding: 6px 8px; font: 11.5px/1.4 ui-monospace, Consolas, monospace;
+        border: 1px solid #dadce0; border-radius: 6px; resize: vertical;
+      }
+      button.go { background: #188038; border-color: #188038; color: #fff; }
+      button.go:hover { background: #137333; }
+      [hidden] { display: none !important; }
     </style>
   </head>
   <body>
@@ -55,7 +63,7 @@
       <span class="k">Saved captures</span><span class="v" id="s-total">–</span>
     </div>
 
-    <label class="check"><input type="checkbox" id="expand-paa" /> Expand PAA answers (slower)</label>
+    <label class="check"><input type="checkbox" id="expand-paa" checked /> Expand PAA answers (slower)</label>
     <label class="check"><input type="checkbox" id="raw-html" checked /> Keep raw HTML snapshot</label>
 
     <button class="primary" id="collect">Collect SERP</button>
@@ -65,6 +73,24 @@
     </div>
 
     <div class="msg" id="msg"></div>
+
+    <div class="rule"></div>
+
+    <h2>Search queue</h2>
+    <div class="sub" id="q-status">No queue loaded.</div>
+    <div id="q-controls" hidden>
+      <button class="go" id="q-next">Open next search</button>
+      <div class="row">
+        <button id="q-retry">Retry failed</button>
+        <button id="q-clear">Clear queue</button>
+      </div>
+    </div>
+    <details id="q-load-wrap">
+      <summary id="q-load-label">Load a queue</summary>
+      <textarea id="q-text" rows="6" spellcheck="false"
+        placeholder="One per line: a Google search URL, or a keyword (searched with gl=us&amp;hl=en&amp;pws=0&amp;num=20)"></textarea>
+      <button id="q-load">Load queue</button>
+    </details>
 
     <details id="diag-wrap" hidden>
       <summary>Diagnostics</summary>

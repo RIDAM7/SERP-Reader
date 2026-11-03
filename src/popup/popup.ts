@@ -6,6 +6,8 @@
  * of the two message round-trips below.
  */
 import type { BackgroundResponse, ContentResponse } from '../types/messages';
+import { nextItem, parseQueue, progress, retryable, type Queue } from '../queue/queue';
+import { getQueue, getSettings, onQueueChange, openNext, setQueue, setSettings } from '../queue/store';
 import { aiCitationsCsv, featuresCsv, organicCsv, paaCsv, serpsJson } from '../storage/export';
 import type { SerpData } from '../types/serp';
 
@@ -26,6 +28,15 @@ const els = {
   rawHtml: $<HTMLInputElement>('raw-html'),
   diagWrap: $<HTMLDetailsElement>('diag-wrap'),
   diag: $('diag'),
+  qStatus: $('q-status'),
+  qControls: $('q-controls'),
+  qNext: $<HTMLButtonElement>('q-next'),
+  qRetry: $<HTMLButtonElement>('q-retry'),
+  qClear: $<HTMLButtonElement>('q-clear'),
+  qLoadWrap: $<HTMLDetailsElement>('q-load-wrap'),
+  qLoadLabel: $('q-load-label'),
+  qText: $<HTMLTextAreaElement>('q-text'),
+  qLoad: $<HTMLButtonElement>('q-load'),
 };
 
 function say(text: string, tone: '' | 'ok' | 'error' | 'busy' = '') {
@@ -162,5 +173,80 @@ els.exportAll.addEventListener('click', async () => {
   download(`serp_features-${stamp}.csv`, featuresCsv(serps), 'text/csv');
   say(`Exported ${serps.length} capture(s) — 1 JSON + 4 CSVs.`, 'ok');
 });
+
+/* ------------------------------------------------------------- settings */
+
+// Remembered, because the on-page panel and the queue read the same two choices.
+void getSettings().then((s) => {
+  els.expandPaa.checked = s.expandPaa;
+  els.rawHtml.checked = s.includeRawHtml;
+});
+els.expandPaa.addEventListener('change', () => void setSettings({ expandPaa: els.expandPaa.checked }));
+els.rawHtml.addEventListener('change', () => void setSettings({ includeRawHtml: els.rawHtml.checked }));
+
+/* ---------------------------------------------------------------- queue */
+
+function showQueue(q: Queue | null) {
+  const p = progress(q);
+  const next = nextItem(q);
+  els.qControls.hidden = !q;
+  els.qLoadLabel.textContent = q ? 'Replace the queue' : 'Load a queue';
+  els.qRetry.disabled = !(p.failed + p.skipped);
+  els.qNext.disabled = !next;
+  if (!q) {
+    els.qStatus.textContent = 'No queue loaded.';
+    return;
+  }
+  const extra = [p.failed && `${p.failed} failed`, p.skipped && `${p.skipped} skipped`].filter(Boolean);
+  els.qStatus.textContent =
+    `${p.done} of ${p.total} done${extra.length ? ` · ${extra.join(' · ')}` : ''}` +
+    (next ? ` · next: ${next.query}` : ' · finished');
+}
+
+els.qLoad.addEventListener('click', async () => {
+  const { items, rejected } = parseQueue(els.qText.value);
+  if (!items.length) {
+    say(rejected.length ? `No Google searches in that list (${rejected.length} lines rejected).` : 'Paste at least one line.', 'error');
+    return;
+  }
+  await setQueue({ items, loadedAt: new Date().toISOString() });
+  els.qText.value = '';
+  els.qLoadWrap.open = false;
+  say(`Queue loaded: ${items.length} searches${rejected.length ? `, ${rejected.length} lines rejected` : ''}.`, 'ok');
+});
+
+els.qNext.addEventListener('click', async () => {
+  const tab = await activeTab();
+  if (!tab?.id) return;
+  const tabId = tab.id;
+  // The page it opens captures itself once it settles; the panel there shows the next one.
+  const item = await openNext((url) => chrome.tabs.update(tabId, { url }));
+  if (item) window.close();
+});
+
+els.qRetry.addEventListener('click', async () => {
+  const q = await getQueue();
+  if (q) await setQueue(retryable(q));
+});
+
+// Two clicks: a cleared queue forgets which searches are done. The captures themselves stay.
+let clearArmed: ReturnType<typeof setTimeout> | undefined;
+els.qClear.addEventListener('click', async () => {
+  if (!clearArmed) {
+    els.qClear.textContent = 'Click again to clear';
+    clearArmed = setTimeout(() => {
+      clearArmed = undefined;
+      els.qClear.textContent = 'Clear queue';
+    }, 3000);
+    return;
+  }
+  clearTimeout(clearArmed);
+  clearArmed = undefined;
+  els.qClear.textContent = 'Clear queue';
+  await setQueue(null);
+});
+
+void getQueue().then(showQueue);
+onQueueChange(showQueue);
 
 void refresh();

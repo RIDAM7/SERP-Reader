@@ -26,3 +26,14 @@ await build({
   target: 'es2022',
   logLevel: 'warning',
 });
+
+await build({
+  entryPoints: ['src/queue/queue.ts', 'src/content/settle.ts'],
+  outdir: 'test/.queue',
+  bundle: true,
+  format: 'esm',
+  platform: 'neutral',
+  target: 'es2022',
+  outExtension: { '.js': '.mjs' },
+  logLevel: 'warning',
+});

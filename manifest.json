@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "SERP Reader",
   "version": "1.0.0",
-  "description": "Reads and stores the Google results page you already have open. No searching, no automation — you open the URL, you press Collect.",
-  "permissions": ["unlimitedStorage"],
+  "description": "Reads and stores the Google results page you have open. It never searches by itself: every search opens on your click, from a URL or a queue you give it.",
+  "permissions": ["unlimitedStorage", "storage"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

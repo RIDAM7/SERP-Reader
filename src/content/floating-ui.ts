@@ -1,5 +1,5 @@
 /**
- * The on-page Collect button.
+ * The on-page panel: Collect, and when a queue is loaded, Next and Skip.
  *
  * Everything lives inside a shadow root. Google's stylesheet is enormous and
  * changes constantly; without isolation this button inherits whatever `div`
@@ -10,12 +10,30 @@
  */
 const POSITION_KEY = 'serp-reader:button-position';
 
+/** What the panel shows of the queue. */
+export interface QueueView {
+  total: number;
+  done: number;
+  failed: number;
+  skipped: number;
+  next?: string;
+}
+
 export interface FloatingUI {
   setStatus(text: string, tone?: 'idle' | 'busy' | 'ok' | 'error'): void;
+  setQueue(view: QueueView | null): void;
+  /** Every button off while a capture runs, so nothing is opened or collected twice. */
+  setBusy(busy: boolean): void;
   destroy(): void;
 }
 
-export function mountFloatingButton(onCollect: () => void | Promise<void>): FloatingUI {
+export interface PanelActions {
+  onCollect: () => void | Promise<void>;
+  onNext: () => void | Promise<void>;
+  onSkip: () => void | Promise<void>;
+}
+
+export function mountFloatingButton(actions: PanelActions): FloatingUI {
   const host = document.createElement('div');
   host.id = 'serp-reader-root';
   host.style.cssText = 'position:fixed;z-index:2147483647;top:120px;right:20px;';
@@ -29,7 +47,7 @@ export function mountFloatingButton(onCollect: () => void | Promise<void>): Floa
       background: #ffffff; color: #202124;
       border: 1px solid #dadce0; border-radius: 10px;
       box-shadow: 0 2px 12px rgba(0,0,0,.18);
-      width: 190px; overflow: hidden; user-select: none;
+      width: 220px; overflow: hidden; user-select: none;
     }
     .head {
       display: flex; align-items: center; justify-content: space-between;
@@ -48,6 +66,17 @@ export function mountFloatingButton(onCollect: () => void | Promise<void>): Floa
     .status.ok { color: #188038; }
     .status.error { color: #c5221f; }
     .status.busy { color: #b06000; }
+    .queue { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ecedef; }
+    .queue[hidden], .skip[hidden] { display: none; }
+    .count { font-size: 11.5px; color: #5f6368; margin-bottom: 6px; }
+    .next { background: #188038; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .next:hover { background: #137333; }
+    .skip {
+      margin-top: 4px; padding: 4px; background: none; color: #5f6368;
+      font-weight: 400; font-size: 11.5px;
+    }
+    .skip:hover { background: #f1f3f4; }
+    .skip:disabled { background: none; color: #bdc1c6; }
   `;
 
   const panel = document.createElement('div');
@@ -57,27 +86,66 @@ export function mountFloatingButton(onCollect: () => void | Promise<void>): Floa
     <div class="body">
       <button type="button" class="collect">Collect SERP</button>
       <div class="status">Ready</div>
+      <div class="queue" hidden>
+        <div class="count"></div>
+        <button type="button" class="next"></button>
+        <button type="button" class="skip">Skip this one</button>
+      </div>
     </div>`;
 
   shadow.append(style, panel);
   document.documentElement.appendChild(host);
 
-  const button = shadow.querySelector('.collect') as HTMLButtonElement;
+  const collect = shadow.querySelector('.collect') as HTMLButtonElement;
   const status = shadow.querySelector('.status') as HTMLElement;
+  const queue = shadow.querySelector('.queue') as HTMLElement;
+  const count = shadow.querySelector('.count') as HTMLElement;
+  const next = shadow.querySelector('.next') as HTMLButtonElement;
+  const skip = shadow.querySelector('.skip') as HTMLButtonElement;
+
+  let busy = false;
+  let hasNext = false;
+  const sync = () => {
+    collect.disabled = busy;
+    next.disabled = busy || !hasNext;
+    skip.disabled = busy || !hasNext;
+  };
 
   const setStatus: FloatingUI['setStatus'] = (t, tone = 'idle') => {
     status.textContent = t;
     status.className = `status ${tone}`;
   };
 
-  button.addEventListener('click', async () => {
-    button.disabled = true;
+  const setBusy = (b: boolean) => {
+    busy = b;
+    sync();
+  };
+
+  const setQueue: FloatingUI['setQueue'] = (view) => {
+    queue.hidden = !view;
+    if (!view) return;
+    const extra = [view.failed && `${view.failed} failed`, view.skipped && `${view.skipped} skipped`].filter(Boolean);
+    count.textContent = `Queue: ${view.done} of ${view.total} done${extra.length ? ` · ${extra.join(' · ')}` : ''}`;
+    hasNext = Boolean(view.next);
+    next.textContent = view.next ? `Next: ${view.next}` : 'Queue finished';
+    next.title = view.next ?? '';
+    skip.hidden = !view.next;
+    sync();
+  };
+
+  const run = (fn: () => void | Promise<void>) => async () => {
+    if (busy) return;
+    setBusy(true);
     try {
-      await onCollect();
+      await fn();
     } finally {
-      button.disabled = false;
+      setBusy(false);
     }
-  });
+  };
+
+  collect.addEventListener('click', run(actions.onCollect));
+  next.addEventListener('click', run(actions.onNext));
+  skip.addEventListener('click', run(actions.onSkip));
 
   // --- dragging -----------------------------------------------------------
   try {
@@ -125,6 +193,8 @@ export function mountFloatingButton(onCollect: () => void | Promise<void>): Floa
 
   return {
     setStatus,
+    setQueue,
+    setBusy,
     destroy: () => host.remove(),
   };
 }

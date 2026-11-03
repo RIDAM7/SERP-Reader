@@ -3,10 +3,10 @@
 A local Chrome extension that reads the Google results page **you already have
 open** and stores it. No API, no server, no keys, no cost.
 
-It does not search. You open a URL, Google renders it, you press **Collect**,
-and the extension reads the DOM that is already on screen. That distinction is
-the whole design: everything downstream — storage, exports, history — is built
-on a page a person deliberately opened.
+It does not search by itself. You open a URL, or press **Next** on a queue you
+loaded, Google renders it, and the extension reads the DOM that is already on
+screen. That distinction is the whole design: everything downstream — storage,
+exports, history — is built on a page a person deliberately opened.
 
 ---
 
@@ -53,8 +53,28 @@ declines to run it there, it does not run.
 3. Press **Collect** — either the floating panel on the page or the toolbar popup.
 4. Next keyword.
 
-Both buttons run the same code. The floating panel is draggable and remembers
-where you put it.
+Both buttons run the same code, with the two choices in the popup ("Expand PAA
+answers", on by default, and "Keep raw HTML snapshot"), which are remembered.
+The floating panel is draggable and remembers where you put it.
+
+### A queue of searches
+
+For a batch, load the list once and press one button per search:
+
+1. Toolbar popup → **Load a queue** → paste one line per search: a Google
+   search URL, as the research `queues/*.txt` files hold them, or a keyword,
+   which is searched as `…/search?q=KEYWORD&gl=us&hl=en&pws=0&num=20`.
+2. **Open next search** in the popup, or **Next** on the floating panel.
+3. The page that opens captures itself: it waits for the results column to
+   stop changing (an AI Overview streams in after load), opens the People Also
+   Ask questions one at a time if "Expand PAA" is on, and saves. The panel says
+   what it is doing, then shows the next search.
+4. Press **Next** again. Nothing opens until you do.
+
+A search that finds no organic results is marked failed; **Retry failed** puts
+failed and skipped ones back. Collecting a queued search by hand ticks it off
+too. Only a page opened from the queue in the last three minutes captures
+itself, so reloading it, or visiting the same search later, does not.
 
 ---
 
@@ -141,7 +161,10 @@ src/
     metadata.ts    query and location parameters from the URL
     utils.ts       selector fallbacks, URL cleaning, de-duplication
     index.ts       orchestrator; wraps every sub-parser so one failure is local
-  content/       runs on the SERP: reads the page, mounts the floating button
+  content/       runs on the SERP: reads the page, mounts the floating button,
+                 captures a page the queue opened once it settles
+  queue/         the search queue: the list (queue.ts) and its state and the
+                 remembered settings in chrome.storage (store.ts)
   background/    service worker — the ONLY thing that touches storage
   storage/       IndexedDB, and the export builders
   popup/ history/ UI
@@ -269,9 +292,10 @@ it can only come from a page a person opened.
   the question, in the region its toggle names in `aria-controls`, and today it
   is an AI Mode answer whose source is its first source card (parser 1.4.0;
   before that no answer was read, and 21 already-rendered ones in the stored
-  captures were missed). Only the popup's Collect runs the expand pass; the
-  on-page button never does. Opening questions makes Google add more below
-  them, so an expanded capture holds more questions than a plain one.
+  captures were missed). Until 2026-11-03 only the popup's Collect ran the
+  expand pass, and only with the box ticked; the panel and the queue now
+  follow the same remembered setting. Opening questions makes Google add more
+  below them, so an expanded capture holds more questions than a plain one.
 - **`num=20` is a request, not a promise.** Google frequently returns fewer.
 - **Position is what was rendered for you**, at your location, at that moment.
   It is a capture, not a rank tracker.
@@ -285,8 +309,9 @@ it can only come from a page a person opened.
 ## What this deliberately does not do
 
 No CAPTCHA solving, no proxy or IP rotation, no fingerprint spoofing, no
-automated searching, no Google account interaction, no stealth scraping, no URL
-generation.
+automated searching, no Google account interaction, no stealth scraping. The
+queue opens one search per click, from your list; a keyword becomes the same
+URL you would have typed, and no query is ever invented.
 
 It reads a page you opened, when you press a button. That is the entire scope,
 and the architecture has no seam where any of the above could be added quietly.

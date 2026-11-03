@@ -45,11 +45,19 @@ test('the expand pass clicks each unanswered question\'s own toggle, once', asyn
     doc.getElementById(t.getAttribute('aria-controls')).innerHTML = rendered;
   });
 
-  const paa = await expandPAA(doc, URL_GEO, { delayMs: 0, timeoutMs: 0 });
+  // Each question is scrolled into view before it is clicked, so the person watching sees which is opening.
+  const order = [];
+  for (const t of toggles) t.scrollIntoView = () => order.push(['scroll', t]);
+  doc.addEventListener('click', (e) => order.push(['click', e.target]), true);
+  const progress = [];
+
+  const paa = await expandPAA(doc, URL_GEO, { delayMs: 0, timeoutMs: 0, onProgress: (n, of) => progress.push([n, of]) });
 
   // The toggle itself is the click target, never a wrapper, and none is clicked twice:
   // the old pass reached the first toggle a second time through the block and closed it.
   assert.deepEqual(clicks, toggles.slice(1), 'clicked something other than the three closed toggles, each once');
+  assert.deepEqual(order, toggles.slice(1).flatMap((t) => [['scroll', t], ['click', t]]));
+  assert.deepEqual(progress, [[1, 3], [2, 3], [3, 3]]);
   assert.deepEqual(
     toggles.map((t) => t.getAttribute('aria-expanded')),
     ['false', 'true', 'true', 'true'],
